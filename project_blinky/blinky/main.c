@@ -56,20 +56,33 @@
 /**
  * @brief Function for application main entry.
  */
-int main(void)
-{
-    /* Configure board. */
-    bsp_board_init(BSP_INIT_LEDS);
 
-    /* Toggle LEDs. */
+void blink_led(uint8_t led, int times)
+{
+    for (int i = 0; i < times; i++)
+    {
+        bsp_board_led_invert(led);
+        nrf_delay_ms(500);
+    }
+    bsp_board_led_off(led);
+    nrf_delay_ms(1000);
+}
+
+void main_loop(void)
+{
     while (true)
     {
-        for (int i = 0; i < LEDS_NUMBER; i++)
-        {
-            bsp_board_led_invert(i);
-            nrf_delay_ms(500);
-        }
+        blink_led(0, 12);
+        blink_led(1, 18);
+        blink_led(2, 10);
     }
+}
+
+int main(void)
+{
+    bsp_board_init(BSP_INIT_LEDS);
+
+    main_loop();
 }
 
 /**
