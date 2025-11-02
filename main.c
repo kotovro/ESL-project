@@ -50,38 +50,23 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "nrf_delay.h"
-#include "boards.h"
+#include "led_utils.h"
 
-/**
- * @brief Function for application main entry.
- */
-
-void blink_led(uint8_t led, int times)
-{
-    for (int i = 0; i < times; i++)
-    {
-        bsp_board_led_invert(led);
-        nrf_delay_ms(500);
-    }
-    bsp_board_led_off(led);
-    nrf_delay_ms(1000);
-}
+#define LED_GREEN 0
+#define LED_RED 1
 
 void main_loop(void)
 {
     while (true)
     {
-        blink_led(0, 12);
-        blink_led(1, 18);
-        blink_led(2, 10);
+        blink_led(LED_GREEN, 12);
+        blink_led(LED_RED, 12);
     }
 }
 
 int main(void)
 {
-    bsp_board_init(BSP_INIT_LEDS);
-
+    init_leds();
     main_loop();
 }
 
