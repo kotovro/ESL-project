@@ -1,8 +1,5 @@
 #include "led_utils.h"
 
-#define LED_GREEN 0
-#define LED_RED 1
-
 #if LEDS_NUMBER > 0
 static const uint8_t m_board_led_list[LEDS_NUMBER] = LEDS_LIST;
 #endif

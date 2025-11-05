@@ -50,24 +50,65 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "led_utils.h"
+#include "button_utils.h"
 
 #define LED_GREEN 0
 #define LED_RED 1
+#define LED_BLUE 2
+#define BLINK_SEQUENCE_LEN 14
+ 
+static int last_idx = 0;
+
+void populate_blinking_sequnce(uint32_t* sequence)
+{
+    for (int i = 0; i < 6; ++i)
+        sequence[i] = LED_GREEN;
+    for (int i = 6; i < 11; ++i)
+        sequence[i] = LED_RED;
+    for (int i = 11; i < 14; ++i)
+        sequence[i] = LED_BLUE;
+}
 
 void main_loop(void)
 {
-    while (true)
-    {
-        blink_led(LED_GREEN, 12);
-        blink_led(LED_RED, 12);
-    }
+    // while (true)
+    // {
+    //     int button_press_time_ms = get_button_press_time_ms();
+    //     if (button_press_time_ms)
+    //     {
+    //         for (int i = 0; i < button_press_time_ms; ++i)
+    //         {
+    //             blink_led(last_idx % BLINK_SEQUENCE_LEN, 1);
+    //             last_idx++;
+    //         }
+            
+    //     }
+    // }
 }
 
 int main(void)
 {
+    uint32_t* sequence = (uint32_t*) malloc(BLINK_SEQUENCE_LEN);
+    populate_blinking_sequnce(sequence);
+
+
     init_leds();
-    main_loop();
+    init_button(); 
+    while (true)
+    {
+        int button_press_time_ms = get_button_press_time_ms();
+        if (true)
+        {
+            for (int i = 0; i < button_press_time_ms; ++i)
+            {
+                last_idx %= BLINK_SEQUENCE_LEN;
+                blink_led(sequence[last_idx % BLINK_SEQUENCE_LEN], 1);
+                last_idx++;
+            }
+        }
+    }
 }
 
 /**
