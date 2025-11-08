@@ -92,22 +92,22 @@ int main(void)
 {
     uint32_t* sequence = (uint32_t*) malloc(BLINK_SEQUENCE_LEN);
     populate_blinking_sequnce(sequence);
-
-
     init_leds();
     init_button(); 
+    
     while (true)
     {
         int button_press_time_ms = get_button_press_time_ms();
-        if (true)
+        for (int i = 0; i < button_press_time_ms; ++i)
         {
-            for (int i = 0; i < button_press_time_ms; ++i)
-            {
-                last_idx %= BLINK_SEQUENCE_LEN;
-                blink_led(sequence[last_idx % BLINK_SEQUENCE_LEN], 1);
-                last_idx++;
-            }
+            blink_led(sequence[last_idx % BLINK_SEQUENCE_LEN], 1);
+            last_idx++; 
         }
+        // while(is_button_pressed())
+        // {
+        //     blink_led(sequence[last_idx % BLINK_SEQUENCE_LEN], 1);
+        //     last_idx++;
+        // }
     }
 }
 
