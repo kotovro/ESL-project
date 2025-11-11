@@ -63,9 +63,8 @@ void blink_led(uint8_t led_idx, int times)
     for (int i = 0; i < times; ++i)
     {
         nrf_gpio_pin_write(m_board_led_list[led_idx], 0);
-        nrf_delay_ms(1000);
+        nrf_delay_ms(500);
         nrf_gpio_pin_write(m_board_led_list[led_idx], 1); 
-        nrf_delay_ms(1000);
+        nrf_delay_ms(500);
     }
-    nrf_delay_ms(1000);
 }
