@@ -78,6 +78,7 @@ void main_loop(void)
 {
     while (true)
     {
+        last_idx = last_idx % BLINK_SEQUENCE_LEN;
         while (is_button_pressed())
         {
             blink_led(sequence[last_idx % BLINK_SEQUENCE_LEN], 1);
