@@ -4,5 +4,6 @@
 
 void init_leds(void);
 void blink_led(uint8_t led_idx, int times);
+void populate_blinking_sequnce(uint32_t* sequence);
 
 #endif

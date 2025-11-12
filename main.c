@@ -54,25 +54,12 @@
 #include "led_utils.h"
 #include "button_utils.h"
 
-
-#define LED_YELLOW 0
-#define LED_RED 1
-#define LED_GREEN 3
 #define BLINK_SEQUENCE_LEN 14
  
 static int last_idx = 0;
 static uint32_t* sequence;
 
-void populate_blinking_sequnce(uint32_t* sequence)
-{
-    int i = 0;
-    for (; i < 5; ++i)
-        sequence[i] = LED_YELLOW;
-    for (; i < 9; ++i)
-        sequence[i] = LED_RED;
-    for (; i < 15; ++i)
-        sequence[i] = LED_GREEN;
-}
+
 
 void main_loop(void)
 {
