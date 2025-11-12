@@ -50,38 +50,50 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "nrf_delay.h"
-#include "boards.h"
+#include <stdlib.h>
+#include "led_utils.h"
+#include "button_utils.h"
 
-/**
- * @brief Function for application main entry.
- */
 
-void blink_led(uint8_t led, int times)
+#define LED_YELLOW 0
+#define LED_RED 1
+#define LED_GREEN 3
+#define BLINK_SEQUENCE_LEN 14
+ 
+static int last_idx = 0;
+static uint32_t* sequence;
+
+void populate_blinking_sequnce(uint32_t* sequence)
 {
-    for (int i = 0; i < times; i++)
-    {
-        bsp_board_led_invert(led);
-        nrf_delay_ms(500);
-    }
-    bsp_board_led_off(led);
-    nrf_delay_ms(1000);
+    int i = 0;
+    for (; i < 5; ++i)
+        sequence[i] = LED_YELLOW;
+    for (; i < 9; ++i)
+        sequence[i] = LED_RED;
+    for (; i < 15; ++i)
+        sequence[i] = LED_GREEN;
 }
 
 void main_loop(void)
 {
     while (true)
     {
-        blink_led(0, 12);
-        blink_led(1, 18);
-        blink_led(2, 10);
+        last_idx = last_idx % BLINK_SEQUENCE_LEN;
+        while (is_button_pressed())
+        {
+            blink_led(sequence[last_idx % BLINK_SEQUENCE_LEN], 1);
+            last_idx++;        
+        }
     }
 }
 
 int main(void)
 {
-    bsp_board_init(BSP_INIT_LEDS);
-
+    sequence = (uint32_t*) malloc(BLINK_SEQUENCE_LEN);
+    populate_blinking_sequnce(sequence);
+    init_leds();
+    init_button();
+    
     main_loop();
 }
 
