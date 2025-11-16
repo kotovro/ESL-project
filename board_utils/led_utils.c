@@ -31,7 +31,7 @@ static void gpio_output_voltage_setup(void)
 }
 #endif
 
-static void init_leds_init(void)
+void init_leds_init(void)
 {
     #if defined(BOARD_PCA10059)
     // If nRF52 USB Dongle is powered from USB (high voltage mode),
@@ -51,11 +51,6 @@ static void init_leds_init(void)
         nrf_gpio_cfg_output(m_board_led_list[i]);
         nrf_gpio_pin_write(m_board_led_list[i], 1); 
     }
-}
-
-void  init_leds(void)
-{
-    init_leds_init();
 }
 
 void blink_led(uint8_t led_idx, int times)

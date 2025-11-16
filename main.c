@@ -50,35 +50,46 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include "led_utils.h"
 #include "button_utils.h"
 
 #define BLINK_SEQUENCE_LEN 14
- 
-static int last_idx = 0;
-static uint32_t* sequence;
 
+typedef struct {
+    uint8_t color;
+    uint8_t count;
+} LedRun;
 
+// The sequence of LED runs
+static const LedRun SEQUENCE_RUNS[] = {
+    { 0, 4 },
+    { 1,    4 },
+    { 2,  6 }
+};
 
 void main_loop(void)
 {
+    uint8_t run = 0;
+    uint8_t offset = 0;
+
     while (true)
     {
-        last_idx = last_idx % BLINK_SEQUENCE_LEN;
         while (is_button_pressed())
         {
-            blink_led(sequence[last_idx % BLINK_SEQUENCE_LEN], 1);
-            last_idx++;        
+            blink_led(SEQUENCE_RUNS[run].color, 1);
+
+            offset++;
+            if (offset >= SEQUENCE_RUNS[run].count) {
+                offset = 0;
+                run = (run + 1) % (sizeof(SEQUENCE_RUNS)/sizeof(SEQUENCE_RUNS[0]));
+            }
         }
     }
 }
 
 int main(void)
 {
-    sequence = (uint32_t*) malloc(BLINK_SEQUENCE_LEN);
-    populate_blinking_sequnce(sequence);
-    init_leds();
+    init_leds_init();
     init_button();
     
     main_loop();

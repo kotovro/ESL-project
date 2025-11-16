@@ -56,6 +56,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/util \
   $(SDK_ROOT)/components/libraries/log/src \
   $(SDK_ROOT)/modules/nrfx \
+  $(SDK_ROOT)/modules/nrfx/drivers/include \
   $(SDK_ROOT)/modules/nrfx/mdk \
   $(SDK_ROOT)/modules/nrfx/hal \
   $(SDK_ROOT)/integration/nrfx \
