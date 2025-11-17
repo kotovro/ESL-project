@@ -62,9 +62,9 @@ typedef struct {
 
 // The sequence of LED runs
 static const LedRun SEQUENCE_RUNS[] = {
-    { 0, 4 },
-    { 1,    4 },
-    { 2,  6 }
+    { LED_YELLOW, 5 },
+    { LED_RED,   4 },
+    { LED_BLUE,  6 }
 };
 
 void main_loop(void)

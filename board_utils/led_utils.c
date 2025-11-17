@@ -1,8 +1,11 @@
 #include "led_utils.h"
 
-#if LEDS_NUMBER > 0
-static const uint8_t m_board_led_list[LEDS_NUMBER] = LEDS_LIST;
-#endif
+static const uint32_t m_led_pins[LED_COUNT] = {
+    NRF_GPIO_PIN_MAP(0,6),  // green
+    NRF_GPIO_PIN_MAP(0,8),  // red
+    NRF_GPIO_PIN_MAP(1,9),  // blue
+    NRF_GPIO_PIN_MAP(0,12)  // white
+};
 
 #if defined(BOARD_PCA10059)
 /** 
@@ -46,10 +49,10 @@ void init_leds_init(void)
     #endif
 
     uint32_t i;
-    for (i = 0; i < LEDS_NUMBER; ++i)
+    for (i = 0; i < LED_COUNT; ++i)
     {
-        nrf_gpio_cfg_output(m_board_led_list[i]);
-        nrf_gpio_pin_write(m_board_led_list[i], 1); 
+        nrf_gpio_cfg_output(m_led_pins[i]);
+        nrf_gpio_pin_write(m_led_pins[i], 1); 
     }
 }
 
@@ -57,9 +60,9 @@ void blink_led(uint8_t led_idx, int times)
 {
     for (int i = 0; i < times; ++i)
     {
-        nrf_gpio_pin_write(m_board_led_list[led_idx], 0);
+        nrf_gpio_pin_write(m_led_pins[led_idx], 0);
         nrf_delay_ms(500);
-        nrf_gpio_pin_write(m_board_led_list[led_idx], 1); 
+        nrf_gpio_pin_write(m_led_pins[led_idx], 1); 
         nrf_delay_ms(500);
     }
 }
