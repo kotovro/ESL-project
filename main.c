@@ -48,7 +48,6 @@
  *
  */
 
-#include <stdbool.h>
 #include <stdint.h>
 #include "led_utils.h"
 #include "button_utils.h"

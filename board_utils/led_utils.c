@@ -1,10 +1,10 @@
 #include "led_utils.h"
 
 static const uint32_t m_led_pins[LED_COUNT] = {
-    NRF_GPIO_PIN_MAP(0,6),  // green
-    NRF_GPIO_PIN_MAP(0,8),  // red
-    NRF_GPIO_PIN_MAP(1,9),  // blue
-    NRF_GPIO_PIN_MAP(0,12)  // white
+    NRF_GPIO_PIN_MAP(0,6),
+    NRF_GPIO_PIN_MAP(0,8),
+    NRF_GPIO_PIN_MAP(1,9),
+    NRF_GPIO_PIN_MAP(0,12) 
 };
 
 #if defined(BOARD_PCA10059)
