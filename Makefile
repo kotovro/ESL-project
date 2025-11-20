@@ -30,8 +30,15 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/memobj/nrf_memobj.c \
   $(SDK_ROOT)/components/libraries/ringbuf/nrf_ringbuf.c \
   $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
+  $(SDK_ROOT)/components/libraries/timer/drv_rtc.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf_format.c \
+  $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_clock.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_pwm.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_clock.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_systick.c \
+  $(PROJ_DIR)/board_utils/button_utils.c \
   $(PROJ_DIR)/board_utils/led_utils.c \
   $(PROJ_DIR)/board_utils/button_utils.c \
   $(PROJ_DIR)/main.c \
@@ -39,28 +46,30 @@ SRC_FILES += \
 # Include folders common to all targets
 INC_FOLDERS += \
   $(SDK_ROOT)/components \
-  $(SDK_ROOT)/components/softdevice/mbr/headers \
-  $(SDK_ROOT)/components/libraries/strerror \
-  $(SDK_ROOT)/components/toolchain/cmsis/include \
-  $(SDK_ROOT)/components/libraries/util \
-  $(SDK_ROOT)/components/libraries/balloc \
-  $(SDK_ROOT)/components/libraries/ringbuf \
-  $(SDK_ROOT)/components/libraries/bsp \
-  $(SDK_ROOT)/components/libraries/log \
-  $(SDK_ROOT)/components/libraries/experimental_section_vars \
-  $(SDK_ROOT)/components/libraries/delay \
+  $(SDL_ROOT)/components/libraries/sortlist \
+  $(SDK_ROOT)/components/boards \
   $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
   $(SDK_ROOT)/components/libraries/atomic \
-  $(SDK_ROOT)/components/boards \
+  $(SDK_ROOT)/components/libraries/balloc \
+  $(SDK_ROOT)/components/libraries/bsp \
+  $(SDK_ROOT)/components/libraries/delay \
+  $(SDK_ROOT)/components/libraries/experimental_section_vars \
+  $(SDK_ROOT)/components/libraries/util \
+  $(SDK_ROOT)/components/libraries/ringbuf \
+  $(SDK_ROOT)/components/libraries/log \
+  $(SDK_ROOT)/components/libraries/strerror \
   $(SDK_ROOT)/components/libraries/memobj \
   $(SDK_ROOT)/components/libraries/util \
   $(SDK_ROOT)/components/libraries/log/src \
+  $(SDK_ROOT)/components/libraries/timer/ \
+  $(SDK_ROOT)/components/softdevice/mbr/headers \
+  $(SDK_ROOT)/components/toolchain/cmsis/include \
+  $(SDK_ROOT)/external/fprintf \
+  $(SDK_ROOT)/integration/nrfx \
   $(SDK_ROOT)/modules/nrfx \
   $(SDK_ROOT)/modules/nrfx/drivers/include \
   $(SDK_ROOT)/modules/nrfx/mdk \
   $(SDK_ROOT)/modules/nrfx/hal \
-  $(SDK_ROOT)/integration/nrfx \
-  $(SDK_ROOT)/external/fprintf \
   $(PROJ_DIR) \
   ./config \
   ./board_utils \
@@ -75,6 +84,8 @@ OPT = -O3
 
 # C flags common to all targets
 CFLAGS += $(OPT)
+CFLAGS += -DAPP_TIMER_V2_RTC1_ENABLED
+CFLAGS += -DAPP_TIMER_V2
 CFLAGS += -DBOARD_PCA10059
 CFLAGS += -DBSP_DEFINES_ONLY
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET

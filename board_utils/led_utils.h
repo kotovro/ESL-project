@@ -2,7 +2,7 @@
 #define LED_UTILS
 #include "nrf_delay.h"
 #include "nrfx_gpiote.h"
-
+#include "nrfx_pwm.h"
 
 typedef enum {
     LED_YELLOW,
@@ -12,9 +12,7 @@ typedef enum {
     LED_COUNT
 } LedId;
 
-
 void init_leds_init(void);
-void blink_led(uint8_t led_idx, int times);
-void populate_blinking_sequnce(uint32_t* sequence);
+void blink_led(uint8_t led_idx);
 
 #endif

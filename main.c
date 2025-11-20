@@ -60,7 +60,7 @@ typedef struct {
 } LedRun;
 
 // The sequence of LED runs
-static const LedRun SEQUENCE_RUNS[] = {
+static const LedRun BLINKING_SEQUENCE[] = {
     { LED_YELLOW, 5 },
     { LED_RED,   4 },
     { LED_BLUE,  6 }
@@ -75,12 +75,12 @@ void main_loop(void)
     {
         while (is_button_pressed())
         {
-            blink_led(SEQUENCE_RUNS[run].color, 1);
+            blink_led(BLINKING_SEQUENCE[run].color);
 
             offset++;
-            if (offset >= SEQUENCE_RUNS[run].count) {
+            if (offset >= BLINKING_SEQUENCE[run].count) {
                 offset = 0;
-                run = (run + 1) % (sizeof(SEQUENCE_RUNS)/sizeof(SEQUENCE_RUNS[0]));
+                run = (run + 1) % (sizeof(BLINKING_SEQUENCE)/sizeof(BLINKING_SEQUENCE[0]));
             }
         }
     }

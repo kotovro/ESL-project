@@ -1,4 +1,5 @@
 #include "led_utils.h"
+#include "nrfx_systick.h"
 
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
@@ -6,6 +7,9 @@ static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(1,9),
     NRF_GPIO_PIN_MAP(0,12) 
 };
+
+
+#define PWM_PERIOD_US 1000
 
 #if defined(BOARD_PCA10059)
 /** 
@@ -54,15 +58,24 @@ void init_leds_init(void)
         nrf_gpio_cfg_output(m_led_pins[i]);
         nrf_gpio_pin_write(m_led_pins[i], 1); 
     }
+    nrfx_systick_init();
 }
 
-void blink_led(uint8_t led_idx, int times)
+void blink_led(uint8_t led_idx)
 {
-    for (int i = 0; i < times; ++i)
+    nrfx_systick_state_t start;
+
+    for (int i = 0; i < 2 * PWM_PERIOD_US; i++)
     {
+        int brightness = (i < PWM_PERIOD_US) ? i : (2 * PWM_PERIOD_US - i);
         nrf_gpio_pin_write(m_led_pins[led_idx], 0);
-        nrf_delay_ms(500);
-        nrf_gpio_pin_write(m_led_pins[led_idx], 1); 
-        nrf_delay_ms(500);
+
+        nrfx_systick_get(&start);
+        while (!nrfx_systick_test(&start, brightness));
+
+        nrf_gpio_pin_write(m_led_pins[led_idx], 1);
+
+        nrfx_systick_get(&start);
+        while (!nrfx_systick_test(&start, PWM_PERIOD_US));
     }
 }
