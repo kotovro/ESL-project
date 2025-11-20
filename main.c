@@ -66,6 +66,8 @@ static const LedRun BLINKING_SEQUENCE[] = {
     { LED_BLUE,  6 }
 };
 
+extern volatile bool is_button_pressed;
+
 void main_loop(void)
 {
     uint8_t run = 0;
@@ -73,7 +75,7 @@ void main_loop(void)
 
     while (true)
     {
-        while (is_button_pressed())
+        while (is_button_pressed)
         {
             blink_led(BLINKING_SEQUENCE[run].color);
 
