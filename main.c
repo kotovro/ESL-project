@@ -49,6 +49,7 @@
  */
 
 #include <stdint.h>
+#include "nrf_pwr_mgmt.h"
 #include "led_utils.h"
 #include "button_utils.h"
 
@@ -90,9 +91,9 @@ void main_loop(void)
 
 int main(void)
 {
+    timers_init();
     init_leds_init();
     init_button();
-    
     main_loop();
 }
 
