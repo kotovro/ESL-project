@@ -1,13 +1,13 @@
 #include "led_utils.h"
 #include "nrfx_systick.h"
 
+
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
     NRF_GPIO_PIN_MAP(0,8),
     NRF_GPIO_PIN_MAP(1,9),
     NRF_GPIO_PIN_MAP(0,12) 
 };
-
 
 #define PWM_PERIOD_US 1000
 
@@ -63,6 +63,8 @@ void init_leds_init(void)
 
 void blink_led(uint8_t led_idx)
 {
+
+
     nrfx_systick_state_t start;
 
     for (int i = 0; i < 2 * PWM_PERIOD_US; i++)
