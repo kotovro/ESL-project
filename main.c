@@ -84,7 +84,7 @@ void main_loop(void)
         while (is_blinking)
         {
             brightness = increasing  ? brightness + 1 : brightness - 1;
-            blink_led(BLINKING_SEQUENCE[run].color, brightness);
+            light_led(BLINKING_SEQUENCE[run].color, brightness);
             
             
             if (brightness == 0) {
@@ -100,7 +100,7 @@ void main_loop(void)
         }
         while (!is_blinking)
         {
-              blink_led(BLINKING_SEQUENCE[run].color, brightness);
+              light_led(BLINKING_SEQUENCE[run].color, brightness);
         }
     }
 }

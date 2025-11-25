@@ -64,7 +64,7 @@ void init_leds_init(void)
     nrfx_systick_init();
 }
 
-void blink_led(uint8_t led_idx, uint16_t brightness)
+void light_led(uint8_t led_idx, uint16_t brightness)
 {
     nrfx_systick_state_t start;
     nrfx_systick_state_t stop;
