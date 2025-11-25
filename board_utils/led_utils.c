@@ -1,8 +1,12 @@
 #include "led_utils.h"
-#include "nrfx_systick.h"
+// #include "nrfx_systick.h"
+#include "nrfx_pwm.h"
+
+#define PWM_PERIOD_US 1000
 
 extern volatile bool freeze_pwm;
 
+uint16_t seq_values[4] = {5, 10, 20, 50};
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
     NRF_GPIO_PIN_MAP(0,8),
@@ -10,7 +14,32 @@ static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,12) 
 };
 
-#define PWM_PERIOD_US 1000
+static nrfx_pwm_t m_pwm = NRFX_PWM_INSTANCE(0);
+const nrf_pwm_sequence_t seq =
+{
+        .values.p_individual = seq_values,
+        .length  = 4,
+        .repeats = 0,
+        .end_delay = 0
+};
+
+nrfx_pwm_config_t const config =
+{
+    .output_pins =
+    {
+        m_led_pins[0],
+        m_led_pins[1],
+        m_led_pins[2],
+        m_led_pins[3] 
+    },
+    .irq_priority = NRFX_PWM_DEFAULT_CONFIG_IRQ_PRIORITY,
+    .base_clock   = NRF_PWM_CLK_1MHz,
+    .count_mode   = NRF_PWM_MODE_UP,
+    .top_value    = 1000,             
+    .load_mode    = NRF_PWM_LOAD_INDIVIDUAL,
+    .step_mode    = NRF_PWM_STEP_AUTO
+};
+
 
 #if defined(BOARD_PCA10059)
 /** 
@@ -52,39 +81,23 @@ void init_leds_init(void)
         gpio_output_voltage_setup();
     }
     #endif
-
-    uint32_t i;
-    for (i = 0; i < LED_COUNT; ++i)
-    {
-        nrf_gpio_cfg_output(m_led_pins[i]);
-        nrf_gpio_pin_write(m_led_pins[i], 1); 
-    }
-    nrfx_systick_init();
 }
 
-void blink_led(uint8_t led_idx)
+void init_pwm_leds(void)
 {
-    nrfx_systick_state_t start;
+  
 
-    for (int i = 0; i < 2 * PWM_PERIOD_US; i++)
-    {
-         while (freeze_pwm)
-        {
-            nrf_gpio_pin_write(m_led_pins[led_idx], 1);
+    nrfx_pwm_init(&m_pwm, &config, NULL);
+}
 
-            nrfx_systick_get(&start);
-            while (!nrfx_systick_test(&start, 1000));
-        }
+void pwm_update(void)
+{
+    nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
+}
 
-        int brightness = (i < PWM_PERIOD_US) ? i : (2 * PWM_PERIOD_US - i);
-        nrf_gpio_pin_write(m_led_pins[led_idx], 0);
+void set_led_brightness(uint8_t led, uint8_t percent)
+{
+    if (led > 3) return;
 
-        nrfx_systick_get(&start);
-        while (!nrfx_systick_test(&start, brightness));
-
-        nrf_gpio_pin_write(m_led_pins[led_idx], 1);
-
-        nrfx_systick_get(&start);
-        while (!nrfx_systick_test(&start, PWM_PERIOD_US));
-    }
+    seq_values[led] = percent * 10;
 }

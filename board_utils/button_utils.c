@@ -85,9 +85,6 @@ static void button_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
         click_counter++;
         is_debouncing = true;
     }
-
-    
-    
 }
 
 void init_button(void)
