@@ -1,7 +1,10 @@
 #include "led_utils.h"
 #include "nrfx_systick.h"
 
-extern volatile bool freeze_pwm;
+#ifndef PWM_PERIOD_US
+#define PWM_PERIOD_US 1000
+#endif
+bool volatile is_blinking = false;
 
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
@@ -10,7 +13,6 @@ static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,12) 
 };
 
-#define PWM_PERIOD_US 1000
 
 #if defined(BOARD_PCA10059)
 /** 
@@ -62,29 +64,19 @@ void init_leds_init(void)
     nrfx_systick_init();
 }
 
-void blink_led(uint8_t led_idx)
+void blink_led(uint8_t led_idx, uint16_t brightness)
 {
     nrfx_systick_state_t start;
+    nrfx_systick_state_t stop;
+    
 
-    for (int i = 0; i < 2 * PWM_PERIOD_US; i++)
-    {
-         while (freeze_pwm)
-        {
-            nrf_gpio_pin_write(m_led_pins[led_idx], 1);
+    nrf_gpio_pin_write(m_led_pins[led_idx], 0);
+    nrfx_systick_get(&start);
+    while (!nrfx_systick_test(&start, brightness));
 
-            nrfx_systick_get(&start);
-            while (!nrfx_systick_test(&start, 1000));
-        }
+    nrf_gpio_pin_write(m_led_pins[led_idx], 1);
+    nrfx_systick_get(&stop);
+    // while (!nrfx_systick_test(&start, PWM_PERIOD_US));
+    while (!nrfx_systick_test(&stop, PWM_PERIOD_US - brightness));
 
-        int brightness = (i < PWM_PERIOD_US) ? i : (2 * PWM_PERIOD_US - i);
-        nrf_gpio_pin_write(m_led_pins[led_idx], 0);
-
-        nrfx_systick_get(&start);
-        while (!nrfx_systick_test(&start, brightness));
-
-        nrf_gpio_pin_write(m_led_pins[led_idx], 1);
-
-        nrfx_systick_get(&start);
-        while (!nrfx_systick_test(&start, PWM_PERIOD_US));
-    }
 }

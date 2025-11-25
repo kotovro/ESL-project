@@ -8,8 +8,8 @@
 #define DEBOUNCE_TIME_MS   50
 #define DOUBLE_CLICK_MS   250
 
+extern volatile bool is_blinking;
 int click_counter = 0; 
-volatile bool is_button_pressed = false;
 volatile bool is_debouncing = false;
 volatile bool freeze_pwm = false;
 
@@ -19,19 +19,9 @@ APP_TIMER_DEF(double_click_timer_id);
 
 static void double_click_timer_handler()
 {
-    bool level = nrf_gpio_pin_read(BUTTON_PIN);
-
-    if (click_counter > 1 && level == BUTTON_PRESSED)
+    if (click_counter > 1)
     {
-        if (!is_button_pressed)
-        {
-            is_button_pressed = true;
-            freeze_pwm = false;
-        }
-        else
-        {   
-            freeze_pwm = !freeze_pwm;
-        }
+        is_blinking = !is_blinking;
     }
     click_counter = 0;
 }
@@ -67,17 +57,6 @@ void timers_init(void)
 
 static void button_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-    bool level = nrf_gpio_pin_read(BUTTON_PIN);
-    if (level != BUTTON_PRESSED)
-    {
-        
-        is_button_pressed = false;
-        click_counter = 0;
-        is_debouncing = false;
-        app_timer_stop(debounce_timer_id);
-        app_timer_stop(double_click_timer_id);
-    }
-
     if (!is_debouncing)
     {
         uint32_t ticks = APP_TIMER_TICKS(DEBOUNCE_TIME_MS);
@@ -85,9 +64,6 @@ static void button_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
         click_counter++;
         is_debouncing = true;
     }
-
-    
-    
 }
 
 void init_button(void)

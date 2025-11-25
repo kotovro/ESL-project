@@ -53,7 +53,9 @@
 #include "led_utils.h"
 #include "button_utils.h"
 
-#define BLINK_SEQUENCE_LEN 14
+#ifndef PWM_PERIOD_US
+#define PWM_PERIOD_US 1000
+#endif
 
 typedef struct {
     uint8_t color;
@@ -67,24 +69,38 @@ static const LedRun BLINKING_SEQUENCE[] = {
     { LED_BLUE,  6 }
 };
 
-extern volatile bool is_button_pressed;
+extern volatile bool is_blinking;
+
 
 void main_loop(void)
 {
     uint8_t run = 0;
     uint8_t offset = 0;
+    uint16_t brightness = 0;
+    bool increasing = true;
 
     while (true)
     {
-        while (is_button_pressed)
+        while (is_blinking)
         {
-            blink_led(BLINKING_SEQUENCE[run].color);
-
-            offset++;
-            if (offset >= BLINKING_SEQUENCE[run].count) {
-                offset = 0;
-                run = (run + 1) % (sizeof(BLINKING_SEQUENCE)/sizeof(BLINKING_SEQUENCE[0]));
+            brightness = increasing  ? brightness + 1 : brightness - 1;
+            blink_led(BLINKING_SEQUENCE[run].color, brightness);
+            
+            
+            if (brightness == 0) {
+                increasing = true;
+                offset++;
+                if (offset >= BLINKING_SEQUENCE[run].count) {
+                    offset = 0;
+                    run = (run + 1) % (sizeof(BLINKING_SEQUENCE)/sizeof(BLINKING_SEQUENCE[0]));
+                }
+            } else if (brightness >= PWM_PERIOD_US) {
+                increasing = false;
             }
+        }
+        while (!is_blinking)
+        {
+              blink_led(BLINKING_SEQUENCE[run].color, brightness);
         }
     }
 }
