@@ -1,6 +1,7 @@
 #include "led_utils.h"
 #include "nrfx_systick.h"
 
+extern volatile bool freeze_pwm;
 
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
@@ -63,12 +64,18 @@ void init_leds_init(void)
 
 void blink_led(uint8_t led_idx)
 {
-
-
     nrfx_systick_state_t start;
 
     for (int i = 0; i < 2 * PWM_PERIOD_US; i++)
     {
+         while (freeze_pwm)
+        {
+            nrf_gpio_pin_write(m_led_pins[led_idx], 1);
+
+            nrfx_systick_get(&start);
+            while (!nrfx_systick_test(&start, 1000));
+        }
+
         int brightness = (i < PWM_PERIOD_US) ? i : (2 * PWM_PERIOD_US - i);
         nrf_gpio_pin_write(m_led_pins[led_idx], 0);
 

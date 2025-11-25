@@ -8,10 +8,10 @@
 #define DEBOUNCE_TIME_MS   50
 #define DOUBLE_CLICK_MS   250
 
-volatile int click_counter = 0; 
-volatile bool is_debouncing = false;
+int click_counter = 0; 
 volatile bool is_button_pressed = false;
-volatile bool is_waiting_second_click = false;
+volatile bool is_debouncing = false;
+volatile bool freeze_pwm = false;
 
 
 APP_TIMER_DEF(debounce_timer_id);
@@ -20,9 +20,18 @@ APP_TIMER_DEF(double_click_timer_id);
 static void double_click_timer_handler()
 {
     bool level = nrf_gpio_pin_read(BUTTON_PIN);
+
     if (click_counter > 1 && level == BUTTON_PRESSED)
     {
-        is_button_pressed = true;
+        if (!is_button_pressed)
+        {
+            is_button_pressed = true;
+            freeze_pwm = false;
+        }
+        else
+        {   
+            freeze_pwm = !freeze_pwm;
+        }
     }
     click_counter = 0;
 }
@@ -31,24 +40,25 @@ static void debounce_timer_handler(void * p_context)
 {
     is_debouncing = false;
     uint32_t ticks = APP_TIMER_TICKS(DOUBLE_CLICK_MS);
-    app_timer_start(double_click_timer_id, ticks, NULL);
-    // bool level = nrf_gpio_pin_read(BUTTON_PIN);
-    // is_waiting_second_click = (level == 0);
-    
-    // if (level == BUTTON_PRESSED && is_waiting_second_click)
-    // {
-    //     uint32_t ticks = APP_TIMER_TICKS(DOUBLE_CLICK_MS);
-    //     app_timer_start(debounce_timer_id, ticks, NULL);
-    // }
-    
+    app_timer_start(double_click_timer_id, ticks, NULL);   
 }
 
 void timers_init(void)
 {
     app_timer_init();
     ret_code_t err_code;
+    err_code = nrfx_clock_init(NULL);
+    nrfx_clock_lfclk_start();
+    APP_ERROR_CHECK(err_code);
+
     
-    err_code = app_timer_create(&button_timer_id,
+    err_code = app_timer_create(&debounce_timer_id,
+                                APP_TIMER_MODE_SINGLE_SHOT,
+                                debounce_timer_handler);
+    APP_ERROR_CHECK(err_code);
+
+    
+    err_code = app_timer_create(&double_click_timer_id,
                                 APP_TIMER_MODE_SINGLE_SHOT,
                                 double_click_timer_handler);
     APP_ERROR_CHECK(err_code);
@@ -57,14 +67,27 @@ void timers_init(void)
 
 static void button_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
+    bool level = nrf_gpio_pin_read(BUTTON_PIN);
+    if (level != BUTTON_PRESSED)
+    {
+        
+        is_button_pressed = false;
+        click_counter = 0;
+        is_debouncing = false;
+        app_timer_stop(debounce_timer_id);
+        app_timer_stop(double_click_timer_id);
+    }
+
     if (!is_debouncing)
     {
-        click_counter++;
-        is_debouncing = true;
         uint32_t ticks = APP_TIMER_TICKS(DEBOUNCE_TIME_MS);
         app_timer_start(debounce_timer_id, ticks, NULL);
-
+        click_counter++;
+        is_debouncing = true;
     }
+
+    
+    
 }
 
 void init_button(void)
