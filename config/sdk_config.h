@@ -352,6 +352,18 @@
 #define NRFX_CLOCK_ENABLED 1
 #endif
 
+#ifndef NRFX_PWM_ENABLED
+#define NRFX_PWM_ENABLED 1
+#endif
+
+#ifndef NRFX_PWM0_ENABLED
+#define NRFX_PWM0_ENABLED 1
+#endif
+
+#ifndef NRFX_PWM0_INST_IDX
+#define NRFX_PWM0_INST_IDX(id) 1
+#endif
+
 #ifndef NRFX_GPIOTE_ENABLED
 #define NRFX_GPIOTE_ENABLED 1
 #endif

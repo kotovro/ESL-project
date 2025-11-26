@@ -1,12 +1,35 @@
 #include "led_utils.h"
-// #include "nrfx_systick.h"
 #include "nrfx_pwm.h"
 
-#define PWM_PERIOD_US 1000
+#define FADE_STEPS 10
 
-extern volatile bool freeze_pwm;
+extern volatile bool sleep;
+extern volatile bool picking_h;
+extern volatile bool picking_s;
+extern volatile bool picking_v;
 
-uint16_t seq_values[4] = {5, 10, 20, 50};
+nrf_pwm_values_individual_t fade_seq[FADE_STEPS * 2];
+static void prepare_fade_sequence(void)
+{
+    fade_seq[0].channel_0 = 0;
+    fade_seq[1].channel_0 = 50;
+    fade_seq[2].channel_0 = 150;
+    fade_seq[3].channel_0 = 250;
+    fade_seq[4].channel_0 = 1000;
+    fade_seq[5].channel_0 = 250;
+    fade_seq[6].channel_0 = 150;
+    fade_seq[7].channel_0 = 50;
+    fade_seq[8].channel_0 = 0;
+    
+    // fade_seq[0].channel_1 = 0;
+    // fade_seq[0].channel_2 = 250;
+    // fade_seq[0].channel_3 = 0;
+
+    // fade_seq[1].channel_0 = 1000;
+    // fade_seq[1].channel_1 = 500;
+    // fade_seq[1].channel_2 = 250;
+    // fade_seq[1].channel_3 = 0;
+}
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
     NRF_GPIO_PIN_MAP(0,8),
@@ -15,22 +38,22 @@ static const uint32_t m_led_pins[LED_COUNT] = {
 };
 
 static nrfx_pwm_t m_pwm = NRFX_PWM_INSTANCE(0);
-const nrf_pwm_sequence_t seq =
+nrf_pwm_sequence_t seq =
 {
-        .values.p_individual = seq_values,
-        .length  = 4,
-        .repeats = 0,
+        .values.p_individual = fade_seq,
+        .length  = 64,
+        .repeats = 1000,
         .end_delay = 0
 };
 
-nrfx_pwm_config_t const config =
+nrfx_pwm_config_t config =
 {
     .output_pins =
     {
-        m_led_pins[0],
-        m_led_pins[1],
-        m_led_pins[2],
-        m_led_pins[3] 
+        m_led_pins[0] | NRFX_PWM_PIN_INVERTED,
+        m_led_pins[1] | NRFX_PWM_PIN_INVERTED,
+        m_led_pins[2] | NRFX_PWM_PIN_INVERTED,
+        m_led_pins[3] | NRFX_PWM_PIN_INVERTED
     },
     .irq_priority = NRFX_PWM_DEFAULT_CONFIG_IRQ_PRIORITY,
     .base_clock   = NRF_PWM_CLK_1MHz,
@@ -39,6 +62,7 @@ nrfx_pwm_config_t const config =
     .load_mode    = NRF_PWM_LOAD_INDIVIDUAL,
     .step_mode    = NRF_PWM_STEP_AUTO
 };
+
 
 
 #if defined(BOARD_PCA10059)
@@ -85,19 +109,33 @@ void init_leds_init(void)
 
 void init_pwm_leds(void)
 {
-  
-
+    prepare_fade_sequence();
     nrfx_pwm_init(&m_pwm, &config, NULL);
 }
 
 void pwm_update(void)
 {
-    nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
-}
-
-void set_led_brightness(uint8_t led, uint8_t percent)
-{
-    if (led > 3) return;
-
-    seq_values[led] = percent * 10;
+    if (sleep) {
+      nrfx_pwm_stop(&m_pwm, true);  
+    } 
+    else {
+        nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
+    }
+    // else if (picking_s) {
+    //     fade_seq[0].channel_0 = 0;
+    //     fade_seq[1].channel_0 = 50;
+    //     fade_seq[3].channel_0 = 150;
+    //     fade_seq[4].channel_0 = 1000;
+    //     fade_seq[5].channel_0 = 150;
+    //     fade_seq[7].channel_0 = 50;
+    //     fade_seq[8].channel_0 = 0;
+    //     nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
+    // }
+    // else if (picking_v) {
+    //     fade_seq[0].channel_0 = 0;
+    //     fade_seq[4].channel_0 = 1000;
+    //     fade_seq[8].channel_0 = 0;
+    //     nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
+    // }
+    
 }

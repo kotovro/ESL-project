@@ -53,39 +53,25 @@
 #include "led_utils.h"
 #include "button_utils.h"
 
-// #define BLINK_SEQUENCE_LEN 14
-
-// typedef struct {
-//     uint8_t color;
-//     uint8_t count;
-// } LedRun;
-
-// // The sequence of LED runs
-// static const LedRun BLINKING_SEQUENCE[] = {
-//     { LED_YELLOW, 5 },
-//     { LED_RED,   4 },
-//     { LED_BLUE,  6 }
-// };
-
-extern volatile bool is_button_pressed;
+extern volatile bool sleep;
+extern volatile bool picking_h;
+extern volatile bool picking_s;
+extern volatile bool picking_v;
 
 void main_loop(void)
 {
     // uint8_t run = 0;
     // uint8_t offset = 0;
-    pwm_update();
     while (true)
     {
-        // while (is_button_pressed)
-        // {
-        //     blink_led(BLINKING_SEQUENCE[run].color);
+        __WFE();
+        __SEV();
+        __WFE();
 
-        //     offset++;
-        //     if (offset >= BLINKING_SEQUENCE[run].count) {
-        //         offset = 0;
-        //         run = (run + 1) % (sizeof(BLINKING_SEQUENCE)/sizeof(BLINKING_SEQUENCE[0]));
-        //     }
-        // }
+        if (!sleep && (picking_h))
+        {
+            pwm_update();
+        }
     }
 }
 

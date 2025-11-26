@@ -40,7 +40,6 @@ SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_pwm.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_clock.c \
-  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_systick.c \
   $(PROJ_DIR)/board_utils/button_utils.c \
   $(PROJ_DIR)/board_utils/led_utils.c \
   $(PROJ_DIR)/board_utils/button_utils.c \
