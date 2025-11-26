@@ -28,29 +28,28 @@ static void double_click_timer_handler()
             sleep = false;
             picking_h = true;
         }
-        else if (picking_h)
-        {
-            picking_h = false;
-            sleep = true;
-        }
         // else if (picking_h)
         // {
         //     picking_h = false;
-        //     picking_s = true;
-        // }
-        // else if (picking_s)
-        // {
-        //     picking_s = false;
-        //     picking_v = true;
-        // }
-        // else if (picking_v)
-        // {
-        //     picking_v = false;
         //     sleep = true;
         // }
+        else if (picking_h)
+        {
+            picking_h = false;
+            picking_s = true;
+        }
+        else if (picking_s)
+        {
+            picking_s = false;
+            picking_v = true;
+        }
+        else if (picking_v)
+        {
+            picking_v = false;
+            sleep = true;
+        }
     }
     click_counter = 0;
-    __SEV();
 }
 
 static void debounce_timer_handler(void * p_context)

@@ -116,26 +116,36 @@ void init_pwm_leds(void)
 void pwm_update(void)
 {
     if (sleep) {
-      nrfx_pwm_stop(&m_pwm, true);  
+        // nrfx_pwm_stop(&m_pwm, true);  
+        nrfx_pwm_stop(&m_pwm, true); 
     } 
-    else {
+    else if (picking_h) {
+        fade_seq[0].channel_0 = 0;
+        fade_seq[4].channel_0 = 1000;
+        fade_seq[8].channel_0 = 0;
+        nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);  
+    }
+    else if (picking_s) {
+        fade_seq[0].channel_0 = 0;
+        fade_seq[1].channel_0 = 50;
+        fade_seq[3].channel_0 = 150;
+        fade_seq[4].channel_0 = 1000;
+        fade_seq[5].channel_0 = 150;
+        fade_seq[7].channel_0 = 50;
+        fade_seq[8].channel_0 = 0;
         nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
     }
-    // else if (picking_s) {
-    //     fade_seq[0].channel_0 = 0;
-    //     fade_seq[1].channel_0 = 50;
-    //     fade_seq[3].channel_0 = 150;
-    //     fade_seq[4].channel_0 = 1000;
-    //     fade_seq[5].channel_0 = 150;
-    //     fade_seq[7].channel_0 = 50;
-    //     fade_seq[8].channel_0 = 0;
-    //     nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
-    // }
-    // else if (picking_v) {
-    //     fade_seq[0].channel_0 = 0;
-    //     fade_seq[4].channel_0 = 1000;
-    //     fade_seq[8].channel_0 = 0;
-    //     nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
-    // }
+    else if (picking_v) {
+       fade_seq[0].channel_0 = 0;
+        fade_seq[1].channel_0 = 50;
+        fade_seq[2].channel_0 = 150;
+        fade_seq[3].channel_0 = 250;
+        fade_seq[4].channel_0 = 1000;
+        fade_seq[5].channel_0 = 250;
+        fade_seq[6].channel_0 = 150;
+        fade_seq[7].channel_0 = 50;
+        fade_seq[8].channel_0 = 0;    
+        nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
+    }
     
 }

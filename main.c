@@ -60,18 +60,14 @@ extern volatile bool picking_v;
 
 void main_loop(void)
 {
-    // uint8_t run = 0;
-    // uint8_t offset = 0;
     while (true)
     {
         __WFE();
         __SEV();
         __WFE();
-
-        if (!sleep && (picking_h))
-        {
-            pwm_update();
-        }
+    
+        pwm_update();
+        
     }
 }
 
