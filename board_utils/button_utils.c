@@ -6,7 +6,7 @@
 #define BUTTON_PIN        38
 #define BUTTON_PRESSED    0
 #define DEBOUNCE_TIME_MS   50
-#define DOUBLE_CLICK_MS   180
+#define DOUBLE_CLICK_MS   400
 
 int click_counter = 0; 
 volatile bool sleep = true;
@@ -15,6 +15,11 @@ volatile bool picking_s = true;
 volatile bool picking_v = false;
 volatile bool is_debouncing = false;
 
+
+void pattern_sleep(void);
+void pattern_hue(void);
+void pattern_saturation(void);
+void pattern_value();
 
 APP_TIMER_DEF(debounce_timer_id);
 APP_TIMER_DEF(double_click_timer_id);
@@ -27,6 +32,7 @@ static void double_click_timer_handler()
         {
             sleep = false;
             picking_h = true;
+            pattern_hue();     
         }
         // else if (picking_h)
         // {
@@ -36,17 +42,20 @@ static void double_click_timer_handler()
         else if (picking_h)
         {
             picking_h = false;
-            picking_s = true;
+            picking_s = true;       
+            pattern_saturation();
         }
         else if (picking_s)
         {
             picking_s = false;
             picking_v = true;
+            pattern_value();
         }
         else if (picking_v)
         {
             picking_v = false;
             sleep = true;
+            pattern_sleep();
         }
     }
     click_counter = 0;

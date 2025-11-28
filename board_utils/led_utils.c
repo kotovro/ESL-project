@@ -1,13 +1,8 @@
 #include "led_utils.h"
 #include "nrfx_pwm.h"
 
-#define FADE_STEPS 8
-
-
-extern volatile bool sleep;
-extern volatile bool picking_h;
-extern volatile bool picking_s;
-extern volatile bool picking_v;
+const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
+#define FADE_STEPS  32
 
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
@@ -21,18 +16,41 @@ nrfx_pwm_config_t config =
     .output_pins =
     {
         m_led_pins[0] | NRFX_PWM_PIN_INVERTED,
-        m_led_pins[1] | NRFX_PWM_PIN_INVERTED,
-        m_led_pins[2] | NRFX_PWM_PIN_INVERTED,
-        m_led_pins[3] | NRFX_PWM_PIN_INVERTED
+        NRFX_PWM_PIN_NOT_USED,
+        NRFX_PWM_PIN_NOT_USED,
+        NRFX_PWM_PIN_NOT_USED
+        // m_led_pins[1] | NRFX_PWM_PIN_INVERTED,
+        // m_led_pins[2] | NRFX_PWM_PIN_INVERTED,
+        // m_led_pins[3] | NRFX_PWM_PIN_INVERTED
     },
     .irq_priority = NRFX_PWM_DEFAULT_CONFIG_IRQ_PRIORITY,
     .base_clock   = NRF_PWM_CLK_1MHz,
     .count_mode   = NRF_PWM_MODE_UP,
-    .top_value    = 1000,             
+    .top_value    = top_value,             
     .load_mode    = NRF_PWM_LOAD_INDIVIDUAL,
     .step_mode    = NRF_PWM_STEP_AUTO
 };
 
+
+nrfx_pwm_config_t config1 =
+{
+    .output_pins =
+    {
+        NRFX_PWM_PIN_NOT_USED,
+        // m_led_pins[0] | NRFX_PWM_PIN_INVERTED,
+        m_led_pins[1] | NRFX_PWM_PIN_INVERTED,
+        NRFX_PWM_PIN_NOT_USED,
+        NRFX_PWM_PIN_NOT_USED
+        // m_led_pins[2] | NRFX_PWM_PIN_INVERTED,
+        // m_led_pins[3] | NRFX_PWM_PIN_INVERTED
+    },
+    .irq_priority = NRFX_PWM_DEFAULT_CONFIG_IRQ_PRIORITY,
+    .base_clock   = NRF_PWM_CLK_1MHz,
+    .count_mode   = NRF_PWM_MODE_UP,
+    .top_value    = top_value,             
+    .load_mode    = NRF_PWM_LOAD_INDIVIDUAL,
+    .step_mode    = NRF_PWM_STEP_AUTO
+};
 
 
 #if defined(BOARD_PCA10059)
@@ -77,18 +95,34 @@ void init_leds_init(void)
     #endif
 }
 
-// PWM instance and sequence buffer
-static nrfx_pwm_t m_pwm = NRFX_PWM_INSTANCE(0);
-static nrf_pwm_values_individual_t seq_buffer[4 * FADE_STEPS];
+static nrfx_pwm_t m_pwn_yellow_led = NRFX_PWM_INSTANCE(0);
+static nrfx_pwm_t m_pwm_oher_led = NRFX_PWM_INSTANCE(1);
 
-// PWM sequence structure
-static nrf_pwm_sequence_t seq = {
+
+nrf_pwm_values_individual_t seq_buffer[FADE_STEPS];
+nrf_pwm_values_individual_t seq_buffer_saturatuion[FADE_STEPS / 16];
+nrf_pwm_values_individual_t seq_buffer_another_led[FADE_STEPS / 16];
+
+nrf_pwm_sequence_t seq = {
     .values.p_individual = seq_buffer,
     .length = 4 * FADE_STEPS,
-    .repeats = 500,
+    .repeats = 50,
     .end_delay = 0
 };
 
+nrf_pwm_sequence_t seq_saturation = {
+    .values.p_individual = seq_buffer_saturatuion,
+    .length = 8,
+    .repeats = 50,
+    .end_delay = 0
+};
+
+nrf_pwm_sequence_t seq_another_led = {
+    .values.p_individual = seq_buffer_another_led,
+    .length = 8,
+    .repeats = 50,
+    .end_delay = 0
+};
 
 // Sleep (LED OFF)
 void pattern_sleep(void) {
@@ -98,48 +132,43 @@ void pattern_sleep(void) {
 
 // Hue fade (example: fade up and down)
 void pattern_hue(void) {
-    seq_buffer[0].channel_0 = 0;
-    seq_buffer[1].channel_0 = 50;
-    seq_buffer[2].channel_0 = 150;
-    seq_buffer[3].channel_0 = 250;
-    seq_buffer[4].channel_0 = 1000;
-    seq_buffer[5].channel_0 = 250;
-    seq_buffer[6].channel_0 = 150;
-    seq_buffer[7].channel_0 = 50;
-    seq_buffer[8].channel_0 = 0;
+    for (int i = 0; i < FADE_STEPS; i++)
+        seq_buffer[i].channel_0 =
+        (i <= FADE_STEPS / 2)
+        ? (i * top_value) / (FADE_STEPS / 2)
+        : ((FADE_STEPS - i) * top_value) / (FADE_STEPS / 2);
+    
+    seq_buffer_another_led[0].channel_1 = 0;
+    seq_buffer_another_led[1].channel_1 = top_value;
+    nrfx_pwm_simple_playback(&m_pwn_yellow_led, &seq, 1, NRFX_PWM_FLAG_LOOP);
+    nrfx_pwm_simple_playback(&m_pwm_oher_led, &seq_another_led, 1, NRFX_PWM_FLAG_LOOP);
+
 }
 
 // Saturation example (faster blink)
 void pattern_saturation(void) {
-    for (int i = 0; i < FADE_STEPS; i++)
-        seq_buffer[i].channel_0 = (i % 2) ? 1000 : 0;
+    seq_buffer_saturatuion[0].channel_0 = 0;
+    seq_buffer_saturatuion[1].channel_0 = top_value;
+
+    nrfx_pwm_simple_playback(&m_pwn_yellow_led, &seq_saturation, 1, NRFX_PWM_FLAG_LOOP);
+    nrfx_pwm_simple_playback(&m_pwm_oher_led, &seq_saturation, 1, NRFX_PWM_FLAG_LOOP);
 }
 
 // Value example (solid ON)
 void pattern_value(void) {
     for (int i = 0; i < FADE_STEPS; i++)
-        seq_buffer[i].channel_0 = 1000;
+        seq_buffer[i].channel_0 = top_value;
+
+    seq_buffer_saturatuion[0].channel_0 = 0;
+    seq_buffer_saturatuion[1].channel_0 = top_value;
+    
+    nrfx_pwm_simple_playback(&m_pwn_yellow_led, &seq, 1, NRFX_PWM_FLAG_LOOP);
+    nrfx_pwm_simple_playback(&m_pwm_oher_led, &seq_saturation, 1, NRFX_PWM_FLAG_LOOP);
 }
 
-// -------------------- Apply pattern --------------------
-void apply_pattern(void (*pattern_func)(void)) {
-    pattern_func(); // fill sequence buffer
-    nrfx_pwm_simple_playback(&m_pwm, &seq, 1, NRFX_PWM_FLAG_LOOP);
-}
 
 // -------------------- Init PWM --------------------
 void init_pwm_leds(void) {
-    nrfx_pwm_init(&m_pwm, &config, NULL);
-}
-
-// -------------------- Update LED --------------------
-void pwm_update(void) {
-    if (sleep) {
-        nrfx_pwm_stop(&m_pwm, true);
-        return;
-    }
-
-    if (picking_h)      apply_pattern(pattern_hue);
-    else if (picking_s) apply_pattern(pattern_saturation);
-    else if (picking_v) apply_pattern(pattern_value);
+    nrfx_pwm_init(&m_pwn_yellow_led, &config, NULL);    
+    nrfx_pwm_init(&m_pwm_oher_led, &config1, NULL);
 }

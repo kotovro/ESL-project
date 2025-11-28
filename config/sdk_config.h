@@ -356,12 +356,17 @@
 #define NRFX_PWM_ENABLED 1
 #endif
 
+
 #ifndef NRFX_PWM0_ENABLED
 #define NRFX_PWM0_ENABLED 1
 #endif
 
 #ifndef NRFX_PWM0_INST_IDX
 #define NRFX_PWM0_INST_IDX(id) 1
+#endif
+
+#ifndef NRFX_PWM1_INST_IDX
+#define NRFX_PWM1_INST_IDX 1
 #endif
 
 #ifndef NRFX_GPIOTE_ENABLED
@@ -378,10 +383,6 @@
 
 #ifndef NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS
 #define NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS 4
-#endif
-
-#ifndef NRFX_SYSTICK_ENABLED
-#define NRFX_SYSTICK_ENABLED 1
 #endif
 
 #ifndef APP_TIMER_ENABLED

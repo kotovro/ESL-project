@@ -65,9 +65,6 @@ void main_loop(void)
         __WFE();
         __SEV();
         __WFE();
-    
-        pwm_update();
-        
     }
 }
 
