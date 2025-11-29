@@ -1,6 +1,7 @@
 #include "led_utils.h"
 #include "nrfx_pwm.h"
 
+
 const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
 #define FADE_STEPS  32
 
@@ -138,10 +139,12 @@ void pattern_hue(void) {
         ? (i * top_value) / (FADE_STEPS / 2)
         : ((FADE_STEPS - i) * top_value) / (FADE_STEPS / 2);
     
+
     seq_buffer_another_led[0].channel_1 = 0;
     seq_buffer_another_led[0].channel_2 = 0;
     seq_buffer_another_led[1].channel_1 = top_value;
     seq_buffer_another_led[1].channel_2 = top_value;
+
     nrfx_pwm_simple_playback(&m_pwn_yellow_led, &seq, 1, NRFX_PWM_FLAG_LOOP);
     nrfx_pwm_simple_playback(&m_pwm_oher_led, &seq_another_led, 1, NRFX_PWM_FLAG_LOOP);
 
@@ -149,14 +152,16 @@ void pattern_hue(void) {
 
 // Saturation example (faster blink)
 void pattern_saturation(void) {
-        for (int i = 0; i < FADE_STEPS; i++)
-        seq_buffer[i].channel_1 =
-        (i <= FADE_STEPS / 2)
-        ? (i * top_value) / (FADE_STEPS / 2)
-        : ((FADE_STEPS - i) * top_value) / (FADE_STEPS / 2);
-    
     seq_buffer_saturatuion[0].channel_0 = 0;
     seq_buffer_saturatuion[1].channel_0 = top_value;
+
+    // for (int i = 0; i < FADE_STEPS; i++)
+    //     seq_buffer[i].channel_1 =
+    //     (i <= FADE_STEPS / 2)
+    //     ? (i * top_value) / (FADE_STEPS / 2)
+    //     : ((FADE_STEPS - i) * top_value) / (FADE_STEPS / 2);
+    
+    
 
     nrfx_pwm_simple_playback(&m_pwn_yellow_led, &seq_saturation, 1, NRFX_PWM_FLAG_LOOP);
     nrfx_pwm_simple_playback(&m_pwm_oher_led, &seq, 1, NRFX_PWM_FLAG_LOOP);

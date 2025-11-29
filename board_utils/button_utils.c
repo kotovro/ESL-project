@@ -2,11 +2,16 @@
 #include "app_timer.h"
 #include "nrfx_clock.h"
 #include "button_utils.h"
+#include "nrfx_pwm.h"
 
 #define BUTTON_PIN        38
 #define BUTTON_PRESSED    0
 #define DEBOUNCE_TIME_MS   50
 #define DOUBLE_CLICK_MS   400
+
+#ifndef FADE_STEPS
+#define FADE_STEPS  32
+#endif
 
 int click_counter = 0; 
 volatile bool sleep = true;
@@ -14,6 +19,7 @@ volatile bool picking_h = false;
 volatile bool picking_s = true;
 volatile bool picking_v = false;
 volatile bool is_debouncing = false;
+volatile bool is_button_pressed = false;
 
 
 void pattern_sleep(void);
@@ -23,9 +29,13 @@ void pattern_value();
 
 APP_TIMER_DEF(debounce_timer_id);
 APP_TIMER_DEF(double_click_timer_id);
+APP_TIMER_DEF(color_change_timer_id);
+
+extern nrf_pwm_values_individual_t seq_buffer[FADE_STEPS];
 
 static void double_click_timer_handler()
 {   
+
     if (click_counter > 1)
     {
         if (sleep)
@@ -42,7 +52,10 @@ static void double_click_timer_handler()
         else if (picking_h)
         {
             picking_h = false;
-            picking_s = true;       
+            picking_s = true;
+            if (is_button_pressed)
+                app_timer_start(color_change_timer_id, 5, NULL);
+
             pattern_saturation();
         }
         else if (picking_s)
@@ -63,10 +76,36 @@ static void double_click_timer_handler()
 
 static void debounce_timer_handler(void * p_context)
 {
+    is_button_pressed = nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED;
     is_debouncing = false;
     uint32_t ticks = APP_TIMER_TICKS(DOUBLE_CLICK_MS);
     app_timer_start(double_click_timer_id, ticks, NULL);   
 }
+
+static void color_change_timer_handler(void * p_context)
+{
+    for (int i = 0; i < FADE_STEPS; i++)
+        seq_buffer[i].channel_1 =
+        (i <= FADE_STEPS / 2)
+        ? (i * 1024) / (FADE_STEPS / 2)
+        : ((FADE_STEPS - i) * 1024) / (FADE_STEPS / 2);
+    // for (int i = 0; i < FADE_STEPS; i++) {
+    //     bool increase = (i <= FADE_STEPS / 2);
+
+    //     seq_buffer[i].channel_1 = increase
+    //         ? (i * 1024) / (FADE_STEPS / 2)
+    //         : ((FADE_STEPS - i) * 1024) / (FADE_STEPS / 2);
+    // }
+
+    // // Second: replace fade values with just 0 or top_value
+    // for (int i = 0; i < FADE_STEPS; i++) {
+    //     seq_buffer[i].channel_1 =
+    //         (seq_buffer[i].channel_1 > (1024 / 2))
+    //         ? 1024
+    //         : 0;
+    // }
+    // This function can be used to handle color change timing if needed
+}   
 
 void timers_init(void)
 {
@@ -88,10 +127,16 @@ void timers_init(void)
                                 double_click_timer_handler);
     APP_ERROR_CHECK(err_code);
 
+    err_code = app_timer_create(&color_change_timer_id,
+                                APP_TIMER_MODE_SINGLE_SHOT,
+                                color_change_timer_handler);
+    APP_ERROR_CHECK(err_code);
+
 }
 
 static void button_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
+    
     if (!is_debouncing && (nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED))
     {
         click_counter++;
