@@ -1,10 +1,51 @@
 #include "led_utils.h"
-#include "nrfx_systick.h"
+#include "nrfx_pwm.h"
+#include "constants.h"
 
-#ifndef PWM_PERIOD_US
-#define PWM_PERIOD_US 1000
-#endif
-bool volatile is_blinking = false;
+
+const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
+
+
+int hue_v = 22;
+int saturation_v = 100;
+int value_v = 100;
+
+bool hue_d = DECREASE;
+bool saturation_d = DECREASE;
+bool value_d = DECREASE;
+
+typedef struct {
+    uint16_t r;
+    uint16_t g;
+    uint16_t b;
+} color;
+
+color hsv_to_rgb(int h, int s, int v) {
+    float r, g, b;
+    float hf = h / 60.0f;
+    float sf = s / 100.0f;
+    float vf = v / 100.0f;
+    int i = (int)hf % 6;
+    float f = hf - i;
+    float p = vf * (1 - sf);
+    float q = vf * (1 - f * sf);
+    float t = vf * (1 - (1 - f) * sf);
+
+    switch (i) {
+        case 0: r = vf; g = t; b = p; break;
+        case 1: r = q; g = vf; b = p; break;
+        case 2: r = p; g = vf; b = t; break;
+        case 3: r = p; g = q; b = vf; break;
+        case 4: r = t; g = p; b = vf; break;
+        case 5: r = vf; g = p; b = q; break;
+        default: r = g = b = 0; break;
+    }
+    color result_color;
+    result_color.r = (uint16_t)(r * top_value);
+    result_color.g = (uint16_t)(g * top_value);
+    result_color.b = (uint16_t)(b * top_value);
+    return result_color;
+}
 
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
@@ -13,6 +54,22 @@ static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,12) 
 };
 
+nrfx_pwm_config_t config_pwm0 =
+{
+    .output_pins =
+    {
+        m_led_pins[0] | NRFX_PWM_PIN_INVERTED,
+        m_led_pins[1] | NRFX_PWM_PIN_INVERTED,
+        m_led_pins[2] | NRFX_PWM_PIN_INVERTED,
+        m_led_pins[3] | NRFX_PWM_PIN_INVERTED
+    },
+    .irq_priority = NRFX_PWM_DEFAULT_CONFIG_IRQ_PRIORITY,
+    .base_clock   = NRF_PWM_CLK_1MHz,
+    .count_mode   = NRF_PWM_MODE_UP,
+    .top_value    = top_value,             
+    .load_mode    = NRF_PWM_LOAD_INDIVIDUAL,
+    .step_mode    = NRF_PWM_STEP_AUTO
+};
 
 #if defined(BOARD_PCA10059)
 /** 
@@ -54,29 +111,117 @@ void init_leds_init(void)
         gpio_output_voltage_setup();
     }
     #endif
-
-    uint32_t i;
-    for (i = 0; i < LED_COUNT; ++i)
-    {
-        nrf_gpio_cfg_output(m_led_pins[i]);
-        nrf_gpio_pin_write(m_led_pins[i], 1); 
-    }
-    nrfx_systick_init();
 }
 
-void light_led(uint8_t led_idx, uint16_t brightness)
+static nrfx_pwm_t m_pwn_status_led = NRFX_PWM_INSTANCE(0);
+
+nrf_pwm_values_individual_t led_seq[FADE_STEPS];
+
+nrf_pwm_sequence_t seq_smooth = {
+    .values.p_individual = led_seq,
+    .length = 4 * FADE_STEPS,
+    .repeats = 50,
+    .end_delay = 0
+};
+
+void initial_color() {
+    color c = hsv_to_rgb(hue_v, saturation_v, value_v);
+    for (int i = 0; i < FADE_STEPS; i++) 
+    {
+        led_seq[i].channel_0 = 0;
+        led_seq[i].channel_1 = c.r;
+        led_seq[i].channel_2 = c.g;
+        led_seq[i].channel_3 = c.b;
+    }
+}
+
+void pattern_sleep(void) {
+    for (int i = 0; i < FADE_STEPS; i++) {
+        led_seq[i].channel_0 = 0;
+    }
+}
+
+void pattern_hue(void) {
+    for (int i = 0; i < FADE_STEPS; i++) {
+        led_seq[i].channel_0 =
+        (i <= FADE_STEPS / 2)
+        ? (i * top_value) / (FADE_STEPS / 2)
+        : ((FADE_STEPS - i) * top_value) / (FADE_STEPS / 2);
+    }
+}
+
+void pattern_saturation(void) {
+    for (int i = 0; i < FADE_STEPS; i++) {
+        led_seq[i].channel_0 = i % 2 ? 0 : top_value;
+    }      
+}
+
+void pattern_value(void) {
+    for (int i = 0; i < FADE_STEPS; i++)
+        led_seq[i].channel_0 = top_value;
+}
+
+void change_hsv(int mode) 
 {
-    nrfx_systick_state_t start;
-    nrfx_systick_state_t stop;
-    
+    if (mode == PICKING_HUE) {
+        if (hue_d == INCREASE) {
+            hue_v += 5;
+            if (hue_v >= 360) {
+                hue_v = 360;
+                hue_d = DECREASE;
+            }
+        } else {
+            hue_v -= 5;
+            if (hue_v <= 0) {
+                hue_v = 0;
+                hue_d = INCREASE;
+            }
+        }
+    } 
+    else if (mode == PICKING_SATURATION) {
+        if (saturation_d == INCREASE) {
+            saturation_v += 5;
+            if (saturation_v >= 100) {
+                saturation_v = 100;
+                saturation_d = DECREASE;
+            }
+        } else {
+            saturation_v -= 5;
+            if (saturation_v <= 0) {
+                saturation_v = 0;
+                saturation_d = INCREASE;
+            }
+        }
+    } 
+    else if (mode == PICKING_VALUE) {
+        if (value_d == INCREASE) {
+            value_v += 5;
+            if (value_v >= 100) {
+                value_v = 100;
+                value_d = DECREASE;
+            }
+        } else {
+            value_v -= 5;
+            if (value_v <= 0) {
+                value_v = 0;
+                value_d = INCREASE;
+            }
+        }
+    }
 
-    nrf_gpio_pin_write(m_led_pins[led_idx], 0);
-    nrfx_systick_get(&start);
-    while (!nrfx_systick_test(&start, brightness));
+    color c = hsv_to_rgb(hue_v, saturation_v, value_v);
+    for (int i = 0; i < FADE_STEPS; i++) 
+    {
+        led_seq[i].channel_1 = c.r;
+        led_seq[i].channel_2 = c.g;
+        led_seq[i].channel_3 = c.b;
+    }
+}
 
-    nrf_gpio_pin_write(m_led_pins[led_idx], 1);
-    nrfx_systick_get(&stop);
-    // while (!nrfx_systick_test(&start, PWM_PERIOD_US));
-    while (!nrfx_systick_test(&stop, PWM_PERIOD_US - brightness));
 
+// -------------------- Init PWM --------------------
+void init_pwm_leds(void) {
+    nrfx_pwm_init(&m_pwn_status_led, &config_pwm0, NULL);
+    initial_color();
+    nrfx_pwm_simple_playback(&m_pwn_status_led, &seq_smooth, 1, NRFX_PWM_FLAG_LOOP);
 }

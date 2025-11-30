@@ -40,8 +40,6 @@ SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_pwm.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_clock.c \
-  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_systick.c \
-  $(PROJ_DIR)/board_utils/button_utils.c \
   $(PROJ_DIR)/board_utils/led_utils.c \
   $(PROJ_DIR)/board_utils/button_utils.c \
   $(PROJ_DIR)/main.c \
@@ -63,7 +61,6 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/log \
   $(SDK_ROOT)/components/libraries/strerror \
   $(SDK_ROOT)/components/libraries/memobj \
-  $(SDK_ROOT)/components/libraries/util \
   $(SDK_ROOT)/components/libraries/log/src \
   $(SDK_ROOT)/components/libraries/timer/ \
   $(SDK_ROOT)/components/softdevice/mbr/headers \

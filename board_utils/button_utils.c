@@ -2,36 +2,76 @@
 #include "app_timer.h"
 #include "nrfx_clock.h"
 #include "button_utils.h"
-
-#define BUTTON_PIN        38
-#define BUTTON_PRESSED    0
-#define DEBOUNCE_TIME_MS   50
-#define DOUBLE_CLICK_MS   1000
+#include "nrfx_pwm.h"
+#include "constants.h"
 
 extern volatile bool is_blinking;
 int click_counter = 0; 
-volatile bool is_debouncing = false;
-volatile bool freeze_pwm = false;
+volatile int mode_global = SLEEP;
+volatile bool is_button_pressed = false;
+bool is_debouncing = false;
 
+void pattern_sleep(void);
+void pattern_hue(void);
+void pattern_saturation(void);
+void pattern_value();
 
 APP_TIMER_DEF(debounce_timer_id);
 APP_TIMER_DEF(double_click_timer_id);
+APP_TIMER_DEF(color_change_timer_id);
+
+extern nrf_pwm_values_individual_t led_seq[FADE_STEPS];
+
+void change_hsv(int mode);
 
 static void double_click_timer_handler()
-{
+{   
+
     if (click_counter > 1)
     {
-        is_blinking = !is_blinking;
+        app_timer_stop(color_change_timer_id);
+        if (mode_global == SLEEP)
+        {
+            mode_global = PICKING_HUE;
+            pattern_hue();     
+        }
+        else if (mode_global == PICKING_HUE)
+        {
+            mode_global = PICKING_SATURATION;
+            pattern_saturation();
+        }
+        else if (mode_global == PICKING_SATURATION)
+        {
+            mode_global = PICKING_VALUE;
+            pattern_value();
+        }
+        else if (mode_global == PICKING_VALUE)
+        {
+            mode_global = SLEEP;
+            pattern_sleep();
+        }
     }
     click_counter = 0;
 }
 
 static void debounce_timer_handler(void * p_context)
 {
+    is_button_pressed = nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED;
     is_debouncing = false;
     uint32_t ticks = APP_TIMER_TICKS(DOUBLE_CLICK_MS);
     app_timer_start(double_click_timer_id, ticks, NULL);   
 }
+
+static void color_change_timer_handler(void * p_context)
+{
+    if (mode_global == SLEEP) {
+        return;
+    }
+    else if (nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED) {
+        change_hsv(mode_global);
+        app_timer_start(color_change_timer_id, COLOR_CHANGE_MS, NULL);
+    }
+}   
 
 void timers_init(void)
 {
@@ -53,10 +93,18 @@ void timers_init(void)
                                 double_click_timer_handler);
     APP_ERROR_CHECK(err_code);
 
+    err_code = app_timer_create(&color_change_timer_id,
+                                APP_TIMER_MODE_SINGLE_SHOT,
+                                color_change_timer_handler);
+    APP_ERROR_CHECK(err_code);
+
 }
 
 static void button_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
+    
+    app_timer_start(color_change_timer_id, COLOR_CHANGE_DELAY, NULL);
+    
     if (!is_debouncing && (nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED))
     {
         click_counter++;

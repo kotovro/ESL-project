@@ -13,6 +13,7 @@ typedef enum {
 } LedId;
 
 void init_leds_init(void);
-void light_led(uint8_t led_idx, uint16_t brightness);
+// void blink_led(uint8_t led_idx);
+void init_pwm_leds(void);
 
 #endif

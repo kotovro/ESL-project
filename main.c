@@ -53,55 +53,18 @@
 #include "led_utils.h"
 #include "button_utils.h"
 
-#ifndef PWM_PERIOD_US
-#define PWM_PERIOD_US 1000
-#endif
-
-typedef struct {
-    uint8_t color;
-    uint8_t count;
-} LedRun;
-
-// The sequence of LED runs
-static const LedRun BLINKING_SEQUENCE[] = {
-    { LED_YELLOW, 5 },
-    { LED_RED,   4 },
-    { LED_BLUE,  6 }
-};
-
-extern volatile bool is_blinking;
-
+extern volatile bool sleep;
+extern volatile bool picking_h;
+extern volatile bool picking_s;
+extern volatile bool picking_v;
 
 void main_loop(void)
 {
-    uint8_t run = 0;
-    uint8_t offset = 0;
-    uint16_t brightness = 0;
-    bool increasing = true;
-
     while (true)
     {
-        while (is_blinking)
-        {
-            brightness = increasing  ? brightness + 1 : brightness - 1;
-            light_led(BLINKING_SEQUENCE[run].color, brightness);
-            
-            
-            if (brightness == 0) {
-                increasing = true;
-                offset++;
-                if (offset >= BLINKING_SEQUENCE[run].count) {
-                    offset = 0;
-                    run = (run + 1) % (sizeof(BLINKING_SEQUENCE)/sizeof(BLINKING_SEQUENCE[0]));
-                }
-            } else if (brightness >= PWM_PERIOD_US) {
-                increasing = false;
-            }
-        }
-        while (!is_blinking)
-        {
-              light_led(BLINKING_SEQUENCE[run].color, brightness);
-        }
+        __WFE();
+        __SEV();
+        __WFE();
     }
 }
 
@@ -109,6 +72,7 @@ int main(void)
 {
     timers_init();
     init_leds_init();
+    init_pwm_leds();
     init_button();
     main_loop();
 }
