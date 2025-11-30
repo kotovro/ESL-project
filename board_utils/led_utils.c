@@ -152,8 +152,6 @@ void pattern_hue(void) {
 
 void pattern_saturation(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
-        // led_seq[i].channel_0 = i <= FADE_STEPS / 2 ? 0 : top_value;
-    // }
         led_seq[i].channel_0 = i % 2 ? 0 : top_value;
     }      
 }
@@ -218,14 +216,12 @@ void change_hsv(int mode)
         led_seq[i].channel_2 = c.g;
         led_seq[i].channel_3 = c.b;
     }
-    // nrfx_pwm_simple_playback(&m_pwn_status_led, &seq_smooth, 1, NRFX_PWM_FLAG_LOOP);
 }
 
 
 // -------------------- Init PWM --------------------
 void init_pwm_leds(void) {
     nrfx_pwm_init(&m_pwn_status_led, &config_pwm0, NULL);
-    // pattern_sleep();
     initial_color();
     nrfx_pwm_simple_playback(&m_pwn_status_led, &seq_smooth, 1, NRFX_PWM_FLAG_LOOP);
 }
