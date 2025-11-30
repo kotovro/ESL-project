@@ -1,18 +1,23 @@
 #include "led_utils.h"
 #include "nrfx_pwm.h"
+#include "constants.h"
 
 
 const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
-#define FADE_STEPS  16
 
-int hue = 22;
-int saturation = 100;
-int value = 100;
+
+int hue_v = 22;
+int saturation_v = 100;
+int value_v = 100;
+
+bool hue_d = DECREASE;
+bool saturation_d = DECREASE;
+bool value_d = DECREASE;
 
 typedef struct {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
+    uint16_t r;
+    uint16_t g;
+    uint16_t b;
 } color;
 
 color hsv_to_rgb(int h, int s, int v) {
@@ -36,9 +41,9 @@ color hsv_to_rgb(int h, int s, int v) {
         default: r = g = b = 0; break;
     }
     color result_color;
-    result_color.r = (uint8_t)(r * 255);
-    result_color.g = (uint8_t)(g * 255);
-    result_color.b = (uint8_t)(b * 255);
+    result_color.r = (uint16_t)(r * top_value);
+    result_color.g = (uint16_t)(g * top_value);
+    result_color.b = (uint16_t)(b * top_value);
     return result_color;
 }
 
@@ -119,12 +124,20 @@ nrf_pwm_sequence_t seq_smooth = {
     .end_delay = 0
 };
 
+void initial_color() {
+    color c = hsv_to_rgb(hue_v, saturation_v, value_v);
+    for (int i = 0; i < FADE_STEPS; i++) 
+    {
+        led_seq[i].channel_0 = 0;
+        led_seq[i].channel_1 = c.r;
+        led_seq[i].channel_2 = c.g;
+        led_seq[i].channel_3 = c.b;
+    }
+}
+
 void pattern_sleep(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
         led_seq[i].channel_0 = 0;
-        led_seq[i].channel_1 = top_value;
-        led_seq[i].channel_2 = top_value;
-        led_seq[i].channel_3 = top_value;
     }
 }
 
@@ -134,18 +147,15 @@ void pattern_hue(void) {
         (i <= FADE_STEPS / 2)
         ? (i * top_value) / (FADE_STEPS / 2)
         : ((FADE_STEPS - i) * top_value) / (FADE_STEPS / 2);
-        
-        led_seq[i].channel_1 = top_value;
-        led_seq[i].channel_2 = top_value;
-        led_seq[i].channel_3 = top_value;
     }
 }
 
 void pattern_saturation(void) {
-    for (int i = 0; i < FADE_STEPS; i+=2) {
-        led_seq[i].channel_0 = 0;
-        led_seq[i+1].channel_0 = top_value;
-    }   
+    for (int i = 0; i < FADE_STEPS; i++) {
+        // led_seq[i].channel_0 = i <= FADE_STEPS / 2 ? 0 : top_value;
+    // }
+        led_seq[i].channel_0 = i % 2 ? 0 : top_value;
+    }      
 }
 
 void pattern_value(void) {
@@ -153,10 +163,69 @@ void pattern_value(void) {
         led_seq[i].channel_0 = top_value;
 }
 
+void change_hsv(int mode) 
+{
+    if (mode == PICKING_HUE) {
+        if (hue_d == INCREASE) {
+            hue_v += 5;
+            if (hue_v >= 360) {
+                hue_v = 360;
+                hue_d = DECREASE;
+            }
+        } else {
+            hue_v -= 5;
+            if (hue_v <= 0) {
+                hue_v = 0;
+                hue_d = INCREASE;
+            }
+        }
+    } 
+    else if (mode == PICKING_SATURATION) {
+        if (saturation_d == INCREASE) {
+            saturation_v += 5;
+            if (saturation_v >= 100) {
+                saturation_v = 100;
+                saturation_d = DECREASE;
+            }
+        } else {
+            saturation_v -= 5;
+            if (saturation_v <= 0) {
+                saturation_v = 0;
+                saturation_d = INCREASE;
+            }
+        }
+    } 
+    else if (mode == PICKING_VALUE) {
+        if (value_d == INCREASE) {
+            value_v += 5;
+            if (value_v >= 100) {
+                value_v = 100;
+                value_d = DECREASE;
+            }
+        } else {
+            value_v -= 5;
+            if (value_v <= 0) {
+                value_v = 0;
+                value_d = INCREASE;
+            }
+        }
+    }
+
+    color c = hsv_to_rgb(hue_v, saturation_v, value_v);
+    for (int i = 0; i < FADE_STEPS; i++) 
+    {
+        led_seq[i].channel_1 = c.r;
+        led_seq[i].channel_2 = c.g;
+        led_seq[i].channel_3 = c.b;
+    }
+    // nrfx_pwm_simple_playback(&m_pwn_status_led, &seq_smooth, 1, NRFX_PWM_FLAG_LOOP);
+}
+
 
 // -------------------- Init PWM --------------------
 void init_pwm_leds(void) {
     nrfx_pwm_init(&m_pwn_status_led, &config_pwm0, NULL);
-    pattern_sleep();
+    // pattern_sleep();
+    initial_color();
     nrfx_pwm_simple_playback(&m_pwn_status_led, &seq_smooth, 1, NRFX_PWM_FLAG_LOOP);
 }
