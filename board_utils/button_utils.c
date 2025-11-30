@@ -31,13 +31,14 @@ APP_TIMER_DEF(debounce_timer_id);
 APP_TIMER_DEF(double_click_timer_id);
 APP_TIMER_DEF(color_change_timer_id);
 
-extern nrf_pwm_values_individual_t seq_buffer[FADE_STEPS];
+extern nrf_pwm_values_individual_t seq_smooth_blink[FADE_STEPS];
 
 static void double_click_timer_handler()
 {   
 
     if (click_counter > 1)
     {
+        
         if (sleep)
         {
             sleep = false;
@@ -53,9 +54,8 @@ static void double_click_timer_handler()
         {
             picking_h = false;
             picking_s = true;
-            if (is_button_pressed)
-                app_timer_start(color_change_timer_id, 5, NULL);
-
+            app_timer_start(color_change_timer_id, 5, NULL);
+        
             pattern_saturation();
         }
         else if (picking_s)
@@ -84,26 +84,56 @@ static void debounce_timer_handler(void * p_context)
 
 static void color_change_timer_handler(void * p_context)
 {
-    for (int i = 0; i < FADE_STEPS; i++)
-        seq_buffer[i].channel_1 =
-        (i <= FADE_STEPS / 2)
-        ? (i * 1024) / (FADE_STEPS / 2)
-        : ((FADE_STEPS - i) * 1024) / (FADE_STEPS / 2);
-    // for (int i = 0; i < FADE_STEPS; i++) {
-    //     bool increase = (i <= FADE_STEPS / 2);
-
-    //     seq_buffer[i].channel_1 = increase
-    //         ? (i * 1024) / (FADE_STEPS / 2)
-    //         : ((FADE_STEPS - i) * 1024) / (FADE_STEPS / 2);
-    // }
-
-    // // Second: replace fade values with just 0 or top_value
-    // for (int i = 0; i < FADE_STEPS; i++) {
-    //     seq_buffer[i].channel_1 =
-    //         (seq_buffer[i].channel_1 > (1024 / 2))
-    //         ? 1024
-    //         : 0;
-    // }
+    if (picking_s) {
+    // for (int i = 0; i < FADE_STEPS; i++)
+    //     seq_smooth_blink[i].channel_1 =
+    //     (i <= FADE_STEPS / 2)
+    //     ? (i * 1024) / (FADE_STEPS / 2)
+        //     : ((FADE_STEPS - i) * 1024) / (FADE_STEPS / 2);
+        // int top_value = 1024;
+        // while (nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED)
+        // {
+        //     // First: increase or decrease current value
+            
+        //     for (int i = 0; i < FADE_STEPS; i++)
+        //     {
+        //         seq_smooth_blink[i].channel_1 =
+        //         (i <= FADE_STEPS / 2)
+        //         ? top_value
+        //         : 0;
+        //     }
+        //     // int h = 10;
+        //     // while(h < 100000000)
+        //     // {
+        //     //     h += 1;
+        //     // }
+        //     // top_value = (top_value < 1024) ? top_value + 1 : top_value - 1;
+        // }
+        // for (int i = 0; i < FADE_STEPS; i++)
+        //     {
+        //         seq_smooth_blink[i].channel_1 = 0;
+        //     }
+    }
+    if (sleep) {
+        // int cur_value = 1;
+        while(nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED)
+        {
+            for (int i = 0; i < FADE_STEPS; i++)
+            {
+                seq_smooth_blink[i].channel_1 = 0;
+            }
+            // seq_smooth_blink[0].channel_1 = cur_value;
+            // cur_value = (cur_value < 1024) ? cur_value + 1 : cur_value - 1;
+            // int h = 10;
+            // while(h < 100000000)
+            // {
+            //     h += 1;
+            // }
+            // top_value = (top_value < 1024) ? top_value + 1 : top_value - 1;
+        }
+    }
+    // Second: replace fade values with just 0 or top_value
+    
     // This function can be used to handle color change timing if needed
 }   
 
@@ -128,7 +158,7 @@ void timers_init(void)
     APP_ERROR_CHECK(err_code);
 
     err_code = app_timer_create(&color_change_timer_id,
-                                APP_TIMER_MODE_SINGLE_SHOT,
+                                APP_TIMER_MODE_REPEATED,
                                 color_change_timer_handler);
     APP_ERROR_CHECK(err_code);
 
