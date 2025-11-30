@@ -11,10 +11,10 @@ volatile int mode_global = SLEEP;
 volatile bool is_button_pressed = false;
 bool is_debouncing = false;
 
-void pattern_sleep(void);
-void pattern_hue(void);
-void pattern_saturation(void);
-void pattern_value();
+void pattern_off(void);
+void pattern_slow_blinking(void);
+void pattern_rapid_blinking(void);
+void pattern_on(void);
 
 APP_TIMER_DEF(debounce_timer_id);
 APP_TIMER_DEF(double_click_timer_id);
@@ -33,22 +33,22 @@ static void double_click_timer_handler()
         if (mode_global == SLEEP)
         {
             mode_global = PICKING_HUE;
-            pattern_hue();     
+            pattern_slow_blinking();     
         }
         else if (mode_global == PICKING_HUE)
         {
             mode_global = PICKING_SATURATION;
-            pattern_saturation();
+            pattern_rapid_blinking();
         }
         else if (mode_global == PICKING_SATURATION)
         {
             mode_global = PICKING_VALUE;
-            pattern_value();
+            pattern_on();
         }
         else if (mode_global == PICKING_VALUE)
         {
             mode_global = SLEEP;
-            pattern_sleep();
+            pattern_off();
         }
     }
     click_counter = 0;

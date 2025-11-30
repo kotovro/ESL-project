@@ -135,13 +135,13 @@ void initial_color() {
     }
 }
 
-void pattern_sleep(void) {
+void pattern_off(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
         led_seq[i].channel_0 = 0;
     }
 }
 
-void pattern_hue(void) {
+void pattern_slow_blinking(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
         led_seq[i].channel_0 =
         (i <= FADE_STEPS / 2)
@@ -150,13 +150,13 @@ void pattern_hue(void) {
     }
 }
 
-void pattern_saturation(void) {
+void pattern_rapid_blinking(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
         led_seq[i].channel_0 = i % 2 ? 0 : top_value;
     }      
 }
 
-void pattern_value(void) {
+void pattern_on(void) {
     for (int i = 0; i < FADE_STEPS; i++)
         led_seq[i].channel_0 = top_value;
 }
