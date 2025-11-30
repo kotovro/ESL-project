@@ -31,7 +31,7 @@ APP_TIMER_DEF(debounce_timer_id);
 APP_TIMER_DEF(double_click_timer_id);
 APP_TIMER_DEF(color_change_timer_id);
 
-extern nrf_pwm_values_individual_t seq_smooth_blink[FADE_STEPS];
+extern nrf_pwm_values_individual_t led_seq[FADE_STEPS];
 
 static void double_click_timer_handler()
 {   
@@ -45,11 +45,6 @@ static void double_click_timer_handler()
             picking_h = true;
             pattern_hue();     
         }
-        // else if (picking_h)
-        // {
-        //     picking_h = false;
-        //     sleep = true;
-        // }
         else if (picking_h)
         {
             picking_h = false;
@@ -85,34 +80,6 @@ static void debounce_timer_handler(void * p_context)
 static void color_change_timer_handler(void * p_context)
 {
     if (picking_s) {
-    // for (int i = 0; i < FADE_STEPS; i++)
-    //     seq_smooth_blink[i].channel_1 =
-    //     (i <= FADE_STEPS / 2)
-    //     ? (i * 1024) / (FADE_STEPS / 2)
-        //     : ((FADE_STEPS - i) * 1024) / (FADE_STEPS / 2);
-        // int top_value = 1024;
-        // while (nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED)
-        // {
-        //     // First: increase or decrease current value
-            
-        //     for (int i = 0; i < FADE_STEPS; i++)
-        //     {
-        //         seq_smooth_blink[i].channel_1 =
-        //         (i <= FADE_STEPS / 2)
-        //         ? top_value
-        //         : 0;
-        //     }
-        //     // int h = 10;
-        //     // while(h < 100000000)
-        //     // {
-        //     //     h += 1;
-        //     // }
-        //     // top_value = (top_value < 1024) ? top_value + 1 : top_value - 1;
-        // }
-        // for (int i = 0; i < FADE_STEPS; i++)
-        //     {
-        //         seq_smooth_blink[i].channel_1 = 0;
-        //     }
     }
     if (sleep) {
         // int cur_value = 1;
@@ -120,21 +87,10 @@ static void color_change_timer_handler(void * p_context)
         {
             for (int i = 0; i < FADE_STEPS; i++)
             {
-                seq_smooth_blink[i].channel_1 = 0;
+                led_seq[i].channel_1 = 0;
             }
-            // seq_smooth_blink[0].channel_1 = cur_value;
-            // cur_value = (cur_value < 1024) ? cur_value + 1 : cur_value - 1;
-            // int h = 10;
-            // while(h < 100000000)
-            // {
-            //     h += 1;
-            // }
-            // top_value = (top_value < 1024) ? top_value + 1 : top_value - 1;
         }
     }
-    // Second: replace fade values with just 0 or top_value
-    
-    // This function can be used to handle color change timing if needed
 }   
 
 void timers_init(void)
