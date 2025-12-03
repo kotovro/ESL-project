@@ -3,8 +3,10 @@
 #include "nrfx_clock.h"
 #include "button_utils.h"
 #include "nrfx_pwm.h"
-#include "constants.h"
+#include "commons.h"
+#include "nvram_utils.h"
 
+extern COLOR_HSV current_hsv;
 extern volatile bool is_blinking;
 int click_counter = 0; 
 volatile int mode_global = SLEEP;
@@ -49,6 +51,7 @@ static void double_click_timer_handler()
         {
             mode_global = SLEEP;
             pattern_off();
+            nvram_save_settings(current_hsv);
         }
     }
     click_counter = 0;

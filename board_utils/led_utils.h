@@ -12,8 +12,14 @@ typedef enum {
     LED_COUNT
 } LedId;
 
+typedef struct {
+    uint16_t r;
+    uint16_t g;
+    uint16_t b;
+} COLOR_RGB;
+
+void show_rgb_color(COLOR_RGB color);
 void init_leds_init(void);
-// void blink_led(uint8_t led_idx);
 void init_pwm_leds(void);
 
 #endif

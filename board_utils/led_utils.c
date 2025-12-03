@@ -1,30 +1,23 @@
-#include "led_utils.h"
+#include "board_utils.h"
 #include "nrfx_pwm.h"
-#include "constants.h"
+#include "commons.h"
 
 
 const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
-
-
-int hue_v = 22;
-int saturation_v = 100;
-int value_v = 100;
+extern COLOR_HSV current_hsv;
 
 bool hue_d = DECREASE;
 bool saturation_d = DECREASE;
 bool value_d = DECREASE;
 
-typedef struct {
-    uint16_t r;
-    uint16_t g;
-    uint16_t b;
-} color;
 
-color hsv_to_rgb(int h, int s, int v) {
+
+
+COLOR_RGB hsv_to_rgb(COLOR_HSV hsv) {
     float r, g, b;
-    float hf = h / 60.0f;
-    float sf = s / 100.0f;
-    float vf = v / 100.0f;
+    float hf = hsv.h / 60.0f;
+    float sf = hsv.s / 100.0f;
+    float vf = hsv.v / 100.0f;
     int i = (int)hf % 6;
     float f = hf - i;
     float p = vf * (1 - sf);
@@ -40,11 +33,11 @@ color hsv_to_rgb(int h, int s, int v) {
         case 5: r = vf; g = p; b = q; break;
         default: r = g = b = 0; break;
     }
-    color result_color;
-    result_color.r = (uint16_t)(r * top_value);
-    result_color.g = (uint16_t)(g * top_value);
-    result_color.b = (uint16_t)(b * top_value);
-    return result_color;
+    COLOR_RGB result_COLOR_RGB;
+    result_COLOR_RGB.r = (uint16_t)(r * top_value);
+    result_COLOR_RGB.g = (uint16_t)(g * top_value);
+    result_COLOR_RGB.b = (uint16_t)(b * top_value);
+    return result_COLOR_RGB;
 }
 
 static const uint32_t m_led_pins[LED_COUNT] = {
@@ -124,15 +117,13 @@ nrf_pwm_sequence_t seq_smooth = {
     .end_delay = 0
 };
 
-void initial_color() {
-    color c = hsv_to_rgb(hue_v, saturation_v, value_v);
+void initial_color_rgb() {
+    COLOR_RGB c = hsv_to_rgb(current_hsv);
     for (int i = 0; i < FADE_STEPS; i++) 
     {
         led_seq[i].channel_0 = 0;
-        led_seq[i].channel_1 = c.r;
-        led_seq[i].channel_2 = c.g;
-        led_seq[i].channel_3 = c.b;
     }
+    show_rgb_color(c);
 }
 
 void pattern_off(void) {
@@ -165,63 +156,65 @@ void change_hsv(int mode)
 {
     if (mode == PICKING_HUE) {
         if (hue_d == INCREASE) {
-            hue_v += 5;
-            if (hue_v >= 360) {
-                hue_v = 360;
+            current_hsv.h += 5;
+            if (current_hsv.h >= 360) {
+                current_hsv.h = 360;
                 hue_d = DECREASE;
             }
         } else {
-            hue_v -= 5;
-            if (hue_v <= 0) {
-                hue_v = 0;
+            current_hsv.h -= 5;
+            if (current_hsv.h <= 0) {
+                current_hsv.h = 0;
                 hue_d = INCREASE;
             }
         }
     } 
     else if (mode == PICKING_SATURATION) {
         if (saturation_d == INCREASE) {
-            saturation_v += 5;
-            if (saturation_v >= 100) {
-                saturation_v = 100;
+            current_hsv.s += 5;
+            if (current_hsv.s >= 100) {
+                current_hsv.s = 100;
                 saturation_d = DECREASE;
             }
         } else {
-            saturation_v -= 5;
-            if (saturation_v <= 0) {
-                saturation_v = 0;
+            current_hsv.s -= 5;
+            if (current_hsv.s <= 0) {
+                current_hsv.s = 0;
                 saturation_d = INCREASE;
             }
         }
     } 
     else if (mode == PICKING_VALUE) {
         if (value_d == INCREASE) {
-            value_v += 5;
-            if (value_v >= 100) {
-                value_v = 100;
+            current_hsv.v += 5;
+            if (current_hsv.v >= 100) {
+                current_hsv.v = 100;
                 value_d = DECREASE;
             }
         } else {
-            value_v -= 5;
-            if (value_v <= 0) {
-                value_v = 0;
+            current_hsv.v -= 5;
+            if (current_hsv.v <= 0) {
+                current_hsv.v = 0;
                 value_d = INCREASE;
             }
         }
     }
 
-    color c = hsv_to_rgb(hue_v, saturation_v, value_v);
-    for (int i = 0; i < FADE_STEPS; i++) 
-    {
-        led_seq[i].channel_1 = c.r;
-        led_seq[i].channel_2 = c.g;
-        led_seq[i].channel_3 = c.b;
-    }
+    COLOR_RGB c = hsv_to_rgb(current_hsv);
+    show_rgb_color(c);
 }
 
-
+void show_rgb_color(COLOR_RGB color) {
+    for (int i = 0; i < FADE_STEPS; i++) 
+    {
+        led_seq[i].channel_1 = color.r;
+        led_seq[i].channel_2 = color.g;
+        led_seq[i].channel_3 = color.b;
+    }
+}
 // -------------------- Init PWM --------------------
 void init_pwm_leds(void) {
     nrfx_pwm_init(&m_pwn_status_led, &config_pwm0, NULL);
-    initial_color();
+    initial_color_rgb();
     nrfx_pwm_simple_playback(&m_pwn_status_led, &seq_smooth, 1, NRFX_PWM_FLAG_LOOP);
 }

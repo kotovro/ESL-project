@@ -47,16 +47,13 @@
  * This file contains the source code for a sample application to blink LEDs.
  *
  */
-
-#include <stdint.h>
-#include "nrf_pwr_mgmt.h"
-#include "led_utils.h"
-#include "button_utils.h"
+#include "board_utils.h"
 
 extern volatile bool sleep;
 extern volatile bool picking_h;
 extern volatile bool picking_s;
 extern volatile bool picking_v;
+COLOR_HSV current_hsv = {22, 100, 100};
 
 void main_loop(void)
 {
@@ -71,6 +68,7 @@ void main_loop(void)
 int main(void)
 {
     timers_init();
+    nvram_load_settings(&current_hsv);
     init_leds_init();
     init_pwm_leds();
     init_button();
