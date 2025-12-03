@@ -1,8 +1,12 @@
-#include <stdint.h>
-#include "nrf.h"
 
 #ifndef CONFIG_H
 #define CONFIG_H
+#include <stdint.h>
+#include <stdbool.h>
+#include "nrf.h"
+
+#define CURRENT_VERSION ((uint32_t)3)
+
 
 // --- Button settings ---
 #define BUTTON_PIN          38
@@ -46,5 +50,6 @@ typedef struct {
 
 #define APPDATA_START_ADDR  (BOOTLOADER_START_ADDR - (NRF_DFU_APP_DATA_PAGES * PAGE_SIZE))
 #define HSV_SETTING_ADDR   (APPDATA_START_ADDR)
+#define VERSION_SETTING_ADDRESS ((uint32_t)((uint32_t*)APPDATA_START_ADDR + 1))
 
 #endif // CONFIG_H

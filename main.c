@@ -91,7 +91,14 @@ int main(void)
             | SCB_SHCSR_USGFAULTENA_Msk;
 
     timers_init();
-    nvram_load_settings(&current_hsv);
+    if (is_version_changed(CURRENT_VERSION))
+    {
+        update_version(CURRENT_VERSION);    
+    } 
+    else
+    {
+        nvram_load_settings(&current_hsv);
+    } 
     init_leds_init();
     init_pwm_leds();
     init_button();
