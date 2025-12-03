@@ -47,6 +47,7 @@
  * This file contains the source code for a sample application to blink LEDs.
  *
  */
+ 
 #include "board_utils.h"
 
 extern volatile bool sleep;
@@ -54,6 +55,24 @@ extern volatile bool picking_h;
 extern volatile bool picking_s;
 extern volatile bool picking_v;
 COLOR_HSV current_hsv = {22, 100, 100};
+
+void MemManage_Handler(void)
+{
+    
+        show_rgb_color((COLOR_RGB){1024, 1024, 1024}); 
+        while (true)
+        {
+        }
+}
+
+void BusFault_Handler(void)
+{
+        show_rgb_color((COLOR_RGB){0, 0, 0});
+        while (true)
+        {
+        }
+    
+}
 
 void main_loop(void)
 {
@@ -67,6 +86,10 @@ void main_loop(void)
 
 int main(void)
 {
+    SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk
+            | SCB_SHCSR_BUSFAULTENA_Msk
+            | SCB_SHCSR_USGFAULTENA_Msk;
+
     timers_init();
     nvram_load_settings(&current_hsv);
     init_leds_init();

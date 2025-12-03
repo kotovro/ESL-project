@@ -3,6 +3,7 @@
 #include "led_utils.h"
 #include <string.h>
 
+
 uint32_t color_hsv_to_uint(COLOR_HSV s)
 {
     uint32_t value;
@@ -19,9 +20,9 @@ COLOR_HSV uint_to_color_hsv(uint32_t value)
 
 void nvram_save_settings(COLOR_HSV current_color)
 {
-    COLOR_RGB c = { 0, 1024, 0 };
-    uint32_t stored_value = *NVRAM_SETTINGS_ADDRESS;
-    COLOR_HSV stored_color = uint_to_color_hsv(stored_value);
+    //uint32_t stored_value = *NVRAM_SETTINGS_ADDRESS;
+    // COLOR_HSV stored_color = uint_to_color_hsv(stored_value);
+    COLOR_HSV stored_color = uint_to_color_hsv(*(uint32_t*)APPDATA_START_ADDR);
     if (stored_color.h == current_color.h &&
         stored_color.s == current_color.s &&
         stored_color.v == current_color.v)
@@ -29,22 +30,22 @@ void nvram_save_settings(COLOR_HSV current_color)
     // if (!nrfx_nvmc_word_writable_check((uint32_t)NVRAM_SETTINGS_ADDRESS, color_hsv_to_uint(current_color))) {
     //     nrfx_nvmc_page_erase(NVRAM_SETTINGS_PAGE_ADDRESS);
     // }
-    show_rgb_color(c);
-    nrfx_nvmc_page_erase(NVRAM_SETTINGS_PAGE_ADDRESS);
-    c = (COLOR_RGB){ 1024, 0, 0 };
-    show_rgb_color(c);
-    nrfx_nvmc_word_write((uint32_t)NVRAM_SETTINGS_ADDRESS, color_hsv_to_uint(current_color));
-    c = (COLOR_RGB){ 0, 0, 1024 };
-    show_rgb_color(c);
+    // uint32_t pg_num = NRF_FICR->CODESIZE - 1;
+    // uint32_t pg_size = NRF_FICR->CODEPAGESIZE;
+    // uint32_t addr = 0xE0000 - 0x1000/*(pg_num * pg_size)*/;
+    nrfx_nvmc_page_erase(APPDATA_START_ADDR);
+    // nrfx_nvmc_page_erase(NVRAM_SETTINGS_PAGE_ADDRESS);
+    // nrfx_nvmc_word_write((uint32_t)NVRAM_SETTINGS_ADDRESS, color_hsv_to_uint(current_color));
+    nrfx_nvmc_word_write(APPDATA_START_ADDR, color_hsv_to_uint(current_color));
     while (!nrfx_nvmc_write_done_check()) {
     }
-    show_rgb_color((COLOR_RGB){1024, 1024, 1024});
 }
 
 void nvram_load_settings(COLOR_HSV* current_color)
 {
-    uint32_t stored_value = *NVRAM_SETTINGS_ADDRESS;
-    COLOR_HSV stored_color = uint_to_color_hsv(stored_value);
+    //uint32_t stored_value = *NVRAM_SETTINGS_ADDRESS;
+    // COLOR_HSV stored_color = uint_to_color_hsv(stored_value);
+    COLOR_HSV stored_color = uint_to_color_hsv(*(uint32_t*)APPDATA_START_ADDR);
     if (stored_color.h > 360 ||
         stored_color.s > 100 ||
         stored_color.v > 100) 
