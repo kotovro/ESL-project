@@ -1,6 +1,6 @@
 #include "board_utils.h"
 #include "nrfx_pwm.h"
-#include "commons.h"
+#include "commons.h" 
 
 
 const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
@@ -156,13 +156,13 @@ void change_hsv(int mode)
 {
     if (mode == PICKING_HUE) {
         if (hue_d == INCREASE) {
-            current_hsv.h += 5;
+            current_hsv.h += STEP_OF_COLOR_CHANGE;
             if (current_hsv.h >= 360) {
                 current_hsv.h = 360;
                 hue_d = DECREASE;
             }
         } else {
-            current_hsv.h -= 5;
+            current_hsv.h -= STEP_OF_COLOR_CHANGE;
             if (current_hsv.h <= 0) {
                 current_hsv.h = 0;
                 hue_d = INCREASE;
@@ -171,13 +171,13 @@ void change_hsv(int mode)
     } 
     else if (mode == PICKING_SATURATION) {
         if (saturation_d == INCREASE) {
-            current_hsv.s += 5;
+            current_hsv.s += STEP_OF_COLOR_CHANGE;
             if (current_hsv.s >= 100) {
                 current_hsv.s = 100;
                 saturation_d = DECREASE;
             }
         } else {
-            current_hsv.s -= 5;
+            current_hsv.s -= STEP_OF_COLOR_CHANGE;
             if (current_hsv.s <= 0) {
                 current_hsv.s = 0;
                 saturation_d = INCREASE;
@@ -186,13 +186,13 @@ void change_hsv(int mode)
     } 
     else if (mode == PICKING_VALUE) {
         if (value_d == INCREASE) {
-            current_hsv.v += 5;
+            current_hsv.v += STEP_OF_COLOR_CHANGE;
             if (current_hsv.v >= 100) {
                 current_hsv.v = 100;
                 value_d = DECREASE;
             }
         } else {
-            current_hsv.v -= 5;
+            current_hsv.v -= STEP_OF_COLOR_CHANGE;
             if (current_hsv.v <= 0) {
                 current_hsv.v = 0;
                 value_d = INCREASE;

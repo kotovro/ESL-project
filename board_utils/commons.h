@@ -4,6 +4,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "nrf.h"
+#include "nrf_log.h"
+#include "nrf_log_ctrl.h"
+#include "nrf_log_default_backends.h"
+#include "nrf_log_backend_usb.h"
+#include "app_usbd.h"
+#include "app_usbd_serial_num.h"
 
 #define CURRENT_VERSION ((uint32_t)3)
 
@@ -29,6 +35,8 @@
 #ifndef FADE_STEPS
 #define FADE_STEPS         32
 #endif
+
+#define STEP_OF_COLOR_CHANGE 1
 
 // --- Directions ---
 #define INCREASE true

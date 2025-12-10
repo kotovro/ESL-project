@@ -80,10 +80,6 @@ void timers_init(void)
 {
     app_timer_init();
     ret_code_t err_code;
-    err_code = nrfx_clock_init(NULL);
-    nrfx_clock_lfclk_start();
-    APP_ERROR_CHECK(err_code);
-
     
     err_code = app_timer_create(&debounce_timer_id,
                                 APP_TIMER_MODE_SINGLE_SHOT,

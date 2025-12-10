@@ -32,7 +32,11 @@ void update_version(uint32_t version)
 
 bool is_version_changed(uint32_t version)
 {
-    return *(uint32_t*)VERSION_SETTING_ADDRESS != version;
+    bool is_version_changed = (*(uint32_t*)VERSION_SETTING_ADDRESS != version);
+    NRF_LOG_INFO(is_version_changed ? "Version changed, set default color" 
+                                    : "Version not changed, load saved color");
+    LOG_BACKEND_USB_PROCESS();
+    return is_version_changed;
 }
 
 void nvram_save_settings(COLOR_HSV current_color)
@@ -56,6 +60,8 @@ void nvram_save_settings(COLOR_HSV current_color)
     nrfx_nvmc_word_write(HSV_SETTING_ADDR, color_hsv_to_uint(current_color));
     while (!nrfx_nvmc_write_done_check()) {
     }
+    NRF_LOG_INFO("Setteings successfully saved");
+    LOG_BACKEND_USB_PROCESS();
 }
 
 void nvram_load_settings(COLOR_HSV* current_color)

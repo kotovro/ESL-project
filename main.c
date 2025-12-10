@@ -49,35 +49,41 @@
  */
  
 #include "board_utils.h"
-
-extern volatile bool sleep;
-extern volatile bool picking_h;
-extern volatile bool picking_s;
-extern volatile bool picking_v;
 COLOR_HSV current_hsv = {22, 100, 100};
 
 void MemManage_Handler(void)
 {
     
-        show_rgb_color((COLOR_RGB){1024, 1024, 1024}); 
-        while (true)
-        {
-        }
+        NRF_LOG_INFO("Memory Manage Fault");
+        NRF_LOG_PROCESS(); 
 }
 
 void BusFault_Handler(void)
 {
-        show_rgb_color((COLOR_RGB){0, 0, 0});
-        while (true)
-        {
-        }
-    
+        NRF_LOG_INFO("Bus Fault");
+        NRF_LOG_PROCESS();     
 }
+
+void logs_init()
+{
+    ret_code_t ret = NRF_LOG_INIT(NULL);
+    APP_ERROR_CHECK(ret);
+
+    
+    NRF_LOG_DEFAULT_BACKENDS_INIT();
+}
+
 
 void main_loop(void)
 {
+    
     while (true)
     {
+        LOG_BACKEND_USB_PROCESS();
+
+        if (!NRF_LOG_PROCESS())
+        {
+        }
         __WFE();
         __SEV();
         __WFE();
@@ -89,7 +95,7 @@ int main(void)
     SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk
             | SCB_SHCSR_BUSFAULTENA_Msk
             | SCB_SHCSR_USGFAULTENA_Msk;
-
+    logs_init();
     timers_init();
     if (is_version_changed(CURRENT_VERSION))
     {
