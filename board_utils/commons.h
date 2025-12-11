@@ -10,6 +10,7 @@
 #include "nrf_log_backend_usb.h"
 #include "app_usbd.h"
 #include "app_usbd_serial_num.h"
+#include "app_usbd_cdc_acm.h"
 
 #define CURRENT_VERSION ((uint32_t)3)
 
@@ -60,4 +61,13 @@ typedef struct {
 #define HSV_SETTING_ADDR   (APPDATA_START_ADDR)
 #define VERSION_SETTING_ADDRESS ((uint32_t)((uint32_t*)APPDATA_START_ADDR + 1))
 
+// USB CDC ACM settings
+#define CDC_ACM_COMM_INTERFACE  2
+#define CDC_ACM_COMM_EPIN       NRF_DRV_USBD_EPIN3
+
+#define CDC_ACM_DATA_INTERFACE  3
+#define CDC_ACM_DATA_EPIN       NRF_DRV_USBD_EPIN4
+#define CDC_ACM_DATA_EPOUT      NRF_DRV_USBD_EPOUT4
+#define READ_SIZE               1
+#define MAX_COMMAND_SIZE        100
 #endif // CONFIG_H

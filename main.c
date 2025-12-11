@@ -74,6 +74,8 @@ void logs_init()
 }
 
 
+
+
 void main_loop(void)
 {
     
@@ -108,6 +110,7 @@ int main(void)
     init_leds_init();
     init_pwm_leds();
     init_button();
+    init_usb_cli();
     main_loop();
 }
 

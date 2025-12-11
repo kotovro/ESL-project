@@ -1,0 +1,24 @@
+#ifndef CLI_UTILS_H
+#define CLI_UTILS_H
+
+#include "commons.h"
+
+#define CMD_SET_RGB 0
+#define CMD_SET_HSV 1
+#define CMD_HELP 2
+#define CMD_UNKNOWN 255 
+
+typedef struct
+{
+    uint8_t command_type;
+    uint16_t arg1;
+    uint8_t arg2;
+    uint8_t arg3;
+} COMMAND;
+
+
+void init_usb_cli(void);
+void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
+                           app_usbd_cdc_acm_user_event_t event);
+
+#endif // CLI_UTILS_H

@@ -4,6 +4,8 @@
 #include "button_utils.h"
 #include "led_utils.h"
 #include "nvram_utils.h"
+#include "cli_utils.h"
 #include "commons.h"
+
 
 #endif
