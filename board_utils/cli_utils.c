@@ -89,6 +89,22 @@ void execute_command(COMMAND cmd)
         "Color set to: R=%u, G=%u, B=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
         break;
     }
+    case CMD_SET_HSV:
+    {
+        COLOR_HSV hsv = 
+        {
+            .h = cmd.arg1,
+            .s = cmd.arg2,
+            .v = cmd.arg3, 
+        };
+
+        COLOR_RGB rgb = hsv_to_rgb(hsv);
+
+        show_rgb_color(rgb);
+        snprintf(msg, sizeof(msg),
+        "Color set to: H=%u, S=%u, S=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
+        break;
+    }
     default:
     {
         strcpy(msg, ERROR_MESSAGE);

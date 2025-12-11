@@ -51,6 +51,12 @@ typedef struct {
     char v;
 } COLOR_HSV;
 
+typedef struct {
+    uint16_t r;
+    uint16_t g;
+    uint16_t b;
+} COLOR_RGB;
+
 // Memory address for NVRAM storage
 
 #ifndef BOOTLOADER_START_ADDR

@@ -1,6 +1,6 @@
 #include "board_utils.h"
 #include "nrfx_pwm.h"
-#include "commons.h" 
+#include "led_utils.h"
 
 
 const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
@@ -11,7 +11,18 @@ bool saturation_d = DECREASE;
 bool value_d = DECREASE;
 
 
+nrf_pwm_values_individual_t led_seq[FADE_STEPS];
 
+
+
+void show_rgb_color(COLOR_RGB color) {
+    for (int i = 0; i < FADE_STEPS; i++) 
+    {
+        led_seq[i].channel_1 = color.r;
+        led_seq[i].channel_2 = color.g;
+        led_seq[i].channel_3 = color.b;
+    }
+}
 
 COLOR_RGB hsv_to_rgb(COLOR_HSV hsv) {
     float r, g, b;
@@ -108,7 +119,6 @@ void init_leds_init(void)
 
 static nrfx_pwm_t m_pwn_status_led = NRFX_PWM_INSTANCE(0);
 
-nrf_pwm_values_individual_t led_seq[FADE_STEPS];
 
 nrf_pwm_sequence_t seq_smooth = {
     .values.p_individual = led_seq,
@@ -204,14 +214,7 @@ void change_hsv(int mode)
     show_rgb_color(c);
 }
 
-void show_rgb_color(COLOR_RGB color) {
-    for (int i = 0; i < FADE_STEPS; i++) 
-    {
-        led_seq[i].channel_1 = color.r;
-        led_seq[i].channel_2 = color.g;
-        led_seq[i].channel_3 = color.b;
-    }
-}
+
 // -------------------- Init PWM --------------------
 void init_pwm_leds(void) {
     nrfx_pwm_init(&m_pwn_status_led, &config_pwm0, NULL);
