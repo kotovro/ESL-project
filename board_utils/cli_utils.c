@@ -68,17 +68,30 @@ static void usb_serial_dumb_print(char const * p_buffer, size_t len)
 
 void execute_command(COMMAND cmd)
 {
-    const char *msg;
+    char msg[400];
     switch(cmd.command_type)
     {
     case CMD_HELP:
     {
-        msg = HELP_MESSAGE;
+        strcpy(msg, HELP_MESSAGE);
         break;                                             
+    }
+    case CMD_SET_RGB:
+    {
+        COLOR_RGB color = 
+        {
+            .r = cmd.arg1 / 255.f * 1024,
+            .g = cmd.arg2 / 255.f * 1024,
+            .b = cmd.arg3 / 255.f * 1024,
+        };
+        show_rgb_color(color);
+        snprintf(msg, sizeof(msg),
+        "Color set to: R=%u, G=%u, B=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
+        break;
     }
     default:
     {
-        msg = ERROR_MESSAGE;
+        strcpy(msg, ERROR_MESSAGE);
         break;
     }
     }
@@ -90,6 +103,7 @@ bool try_parse_arg(uint16_t * arg, int * pos)
     uint16_t parsed_arg = 0;
     while((*pos < counter) && (m_command_buffer[*pos] == ' '))
         *pos = *pos + 1;
+
     int digits = 0;
     while(*pos < counter && m_command_buffer[*pos] != ' ')
     {
@@ -98,7 +112,9 @@ bool try_parse_arg(uint16_t * arg, int * pos)
         if (++digits > 3)
             return false; // too big number
         parsed_arg = parsed_arg * 10 + (uint16_t)(m_command_buffer[*pos] - '0');
+        *pos = *pos + 1;
     }
+
     *arg = parsed_arg;
     return digits > 0;
 }
@@ -106,7 +122,6 @@ bool try_parse_arg(uint16_t * arg, int * pos)
 bool try_parse_args(COMMAND * cmd)
 {
     int cur_pos = 4;
-    NRF_LOG_INFO("Command type: %d", cmd->command_type);
     if (cmd->command_type == CMD_HELP)
     {
         if (counter == 4 || m_command_buffer[cur_pos] == ' ')
@@ -119,19 +134,15 @@ bool try_parse_args(COMMAND * cmd)
             return false;
         }
         cmd->arg1 = parsed_arg;
-        NRF_LOG_INFO("We parsed %d ", parsed_arg);
-        
         if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
             return false;
         }
         cmd->arg2 = parsed_arg;
-        NRF_LOG_INFO("We parsed %d ", parsed_arg);
         
         if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
             return false;
         }
         cmd->arg3 = parsed_arg;
-        NRF_LOG_INFO("We parsed %d ", parsed_arg); 
     }
     else if (cmd->command_type == CMD_SET_HSV)
     {
