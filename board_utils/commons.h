@@ -11,6 +11,8 @@
 #include "app_usbd.h"
 #include "app_usbd_serial_num.h"
 #include "app_usbd_cdc_acm.h"
+#include "app_timer.h"
+#include "nrfx_clock.h"
 
 #define CURRENT_VERSION ((uint32_t)3)
 

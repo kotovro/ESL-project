@@ -1,6 +1,4 @@
 #include "nrfx_gpiote.h"
-#include "app_timer.h"
-#include "nrfx_clock.h"
 #include "button_utils.h"
 #include "nrfx_pwm.h"
 #include "commons.h"

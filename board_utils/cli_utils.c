@@ -1,10 +1,12 @@
 #include "cli_utils.h"
+#include "led_utils.h"
 
 static char m_command_buffer[MAX_COMMAND_SIZE];
 static char m_rx_buffer[READ_SIZE];
-static volatile bool echo_command_done = true;
+static volatile bool tx_done = true;
 static int counter = 0;
 
+APP_TIMER_DEF(parse_command_timer_id);
 
 APP_USBD_CDC_ACM_GLOBAL_DEF(usb_cdc_acm,
                         usb_ev_handler,
@@ -14,10 +16,18 @@ APP_USBD_CDC_ACM_GLOBAL_DEF(usb_cdc_acm,
                         CDC_ACM_DATA_EPIN,
                         CDC_ACM_DATA_EPOUT,                   
                         APP_USBD_CDC_COMM_PROTOCOL_NONE);
+
+
+static void parse_command_timer_handler(void * p_context);
 void init_usb_cli()
 {                       
     app_usbd_class_inst_t const * class_cdc_acm = app_usbd_cdc_acm_class_inst_get(&usb_cdc_acm);
     ret_code_t ret = app_usbd_class_append(class_cdc_acm);
+    APP_ERROR_CHECK(ret);
+    
+    ret = app_timer_create(&parse_command_timer_id,
+                            APP_TIMER_MODE_SINGLE_SHOT,
+                            parse_command_timer_handler);
     APP_ERROR_CHECK(ret);
 }
 
@@ -45,65 +55,34 @@ bool is_command_help()
         && (m_command_buffer[3] == 'P' || m_command_buffer[3] == 'p');
 }
 
+
+
+static void usb_serial_dumb_print(char const * p_buffer, size_t len)
+{
+
+        ret_code_t ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
+                                                p_buffer,
+                                                len);
+        APP_ERROR_CHECK(ret);
+}
+
 void execute_command(COMMAND cmd)
 {
-    ret_code_t ret;
+    const char *msg;
     switch(cmd.command_type)
     {
-    case CMD_UNKNOWN:
-    {
-        ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-                                             "Unknown command\r\n",
-                                             18);
-        APP_ERROR_CHECK(ret);
-        break;
-    }
     case CMD_HELP:
     {
-
-        const char *msg =
-            "Supported commands:\r\n"
-            "RGB <red> <green> <blue> - " 
-            "the device sets current color to specified one.\r\n"
-            "HSV <hue> <saturation> <value> - " 
-            "the same with RGB, but color is specified in HSV.\r\n"
-            "help - print this information.\r\n";
-            ret = app_usbd_cdc_acm_write(&usb_cdc_acm, msg, strlen(msg));
-        // const char *msg1 =
-        // "Supported commands:\r\n"
-        // "RGB <red> <green> <blue> - \r\n";        // echo_command_done = false;
-        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-        //                                     "Supported commands:\r\n",
-        //                                     22);
-        // APP_ERROR_CHECK(ret);
-
-        // // while (!echo_command_done)
-        // // {
-        // // }
-
-        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-        //                                     "RGB <red> <green> <blue> - ",
-        //                                     28);
-        APP_ERROR_CHECK(ret);
-        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-        //                                     "the device sets current color to specified one.\r\n",
-        //                                     50);   
-        // APP_ERROR_CHECK(ret);                             
-        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-        //                                     "HSV <hue> <saturation> <value> - ",
-        //                                     34);  
-        // APP_ERROR_CHECK(ret);
-        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-        //                                     "the same with RGB, but color is specified in HSV.\r\n",
-        //                                     52);
-        // APP_ERROR_CHECK(ret);       
-        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-        //                                     "help - print this information.\r\n",
-        //                                     33);  
-        // APP_ERROR_CHECK(ret);
+        msg = HELP_MESSAGE;
         break;                                             
     }
+    default:
+    {
+        msg = ERROR_MESSAGE;
+        break;
     }
+    }
+    usb_serial_dumb_print(msg, strlen(msg));
 }
 
 bool try_parse_arg(uint16_t * arg, int * pos)
@@ -228,7 +207,14 @@ COMMAND parse_command()
     return parsed_command;
 }
 
+static void parse_command_timer_handler(void * p_context)
+{
+    NRF_LOG_INFO("We will try to parse, counter = %d", counter);
+    COMMAND current_command = parse_command();
 
+    counter = 0;
+    execute_command(current_command);
+}
 
 void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
                            app_usbd_cdc_acm_user_event_t event)
@@ -249,7 +235,7 @@ void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
     }
     case APP_USBD_CDC_ACM_USER_EVT_TX_DONE:
     {
-        echo_command_done = true;
+        tx_done = true;
         NRF_LOG_INFO("tx done");
         break;
     }
@@ -260,34 +246,26 @@ void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
         {
             /*Get amount of data transfered*/
             size_t size = app_usbd_cdc_acm_rx_size(&usb_cdc_acm);
-            NRF_LOG_INFO("rx size: %d", size);
-
+            UNUSED_VARIABLE(size);
+            NRF_LOG_INFO("rx: %d", m_rx_buffer[0]);
             /* It's the simple version of an echo. Note that writing doesn't
              * block execution, and if we have a lot of characters to read and
              * write, some characters can be missed.
              */
-            echo_command_done = false;
             if (m_rx_buffer[0] == '\r' || m_rx_buffer[0] == '\n')
             {
                 ret = app_usbd_cdc_acm_write(&usb_cdc_acm, "\r\n", 2);
-                COMMAND current_command = parse_command();
-                counter = 0;
-                execute_command(current_command);
+                app_timer_start(parse_command_timer_id, 5, NULL);
             }
             else
             {
                 ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
                                              m_rx_buffer,
-                                             READ_SIZE);
+                                             READ_SIZE);                              
                 m_command_buffer[counter] = m_rx_buffer[0];
                 counter++;
             }
-            
-            // while(!echo_command_done)
-            // {
-            //     // while(app_usbd_event_queue_process())
-            //     // {}
-            // }
+
             /* Fetch data until internal buffer is empty */
             ret = app_usbd_cdc_acm_read(&usb_cdc_acm,
                                         m_rx_buffer,
