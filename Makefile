@@ -8,6 +8,7 @@ DFU_PORT         ?= /dev/ttyACM0
 SDK_ROOT ?= ../devel/esl-nsdk
 PROJ_DIR := .
 
+ESTC_USB_CLI_ENABLED ?= 1
 
 $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
   LINKER_SCRIPT  := blinky_gcc_nrf52.ld
@@ -152,6 +153,7 @@ CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 # keep every function in a separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -fno-builtin -fshort-enums
+CFLAGS += -DESTC_USB_CLI_ENABLED=$(ESTC_USB_CLI_ENABLED)
 
 # C++ flags common to all targets
 CXXFLAGS += $(OPT)

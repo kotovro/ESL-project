@@ -1,3 +1,7 @@
+#if ESTC_USB_CLI_ENABLED == 0
+void init_usb_cli() {}
+#else 
+
 #include "cli_utils.h"
 #include "led_utils.h"
 
@@ -305,3 +309,5 @@ void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
         break;
     }
 }
+
+#endif
