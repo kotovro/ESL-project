@@ -60,23 +60,30 @@ void execute_command(COMMAND cmd)
     }
     case CMD_HELP:
     {
-        echo_command_done = false;
-        ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-                                            "Supported commands:\r\n",
-                                            22);
-        APP_ERROR_CHECK(ret);
 
-        while (!echo_command_done)
-        {
-            while (app_usbd_event_queue_process())
-            {
-                /* Wait until we're ready to send the data again */
-            }
-        }
+        const char *msg =
+            "Supported commands:\r\n"
+            "RGB <red> <green> <blue> - " 
+            "the device sets current color to specified one.\r\n"
+            "HSV <hue> <saturation> <value> - " 
+            "the same with RGB, but color is specified in HSV.\r\n"
+            "help - print this information.\r\n";
+            ret = app_usbd_cdc_acm_write(&usb_cdc_acm, msg, strlen(msg));
+        // const char *msg1 =
+        // "Supported commands:\r\n"
+        // "RGB <red> <green> <blue> - \r\n";        // echo_command_done = false;
+        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
+        //                                     "Supported commands:\r\n",
+        //                                     22);
+        // APP_ERROR_CHECK(ret);
 
-        ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-                                            "RGB <red> <green> <blue> - ",
-                                            28);
+        // // while (!echo_command_done)
+        // // {
+        // // }
+
+        // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
+        //                                     "RGB <red> <green> <blue> - ",
+        //                                     28);
         APP_ERROR_CHECK(ret);
         // ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
         //                                     "the device sets current color to specified one.\r\n",
@@ -120,7 +127,7 @@ bool try_parse_arg(uint16_t * arg, int * pos)
 bool try_parse_args(COMMAND * cmd)
 {
     int cur_pos = 4;
-    
+    NRF_LOG_INFO("Command type: %d", cmd->command_type);
     if (cmd->command_type == CMD_HELP)
     {
         if (counter == 4 || m_command_buffer[cur_pos] == ' ')
@@ -129,24 +136,23 @@ bool try_parse_args(COMMAND * cmd)
     else if (cmd->command_type == CMD_SET_RGB)
     {
         uint16_t parsed_arg = 0;
-        if(try_parse_arg(&parsed_arg, &cur_pos)){
-            if (parsed_arg > 255) {
-                return false;
-            }
-            cmd->arg1 = parsed_arg;
+        if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
+            return false;
         }
-        if(try_parse_arg(&parsed_arg, &cur_pos)){
-            if (parsed_arg > 255) {
-                return false;
-            }
-            cmd->arg2 = parsed_arg;
+        cmd->arg1 = parsed_arg;
+        NRF_LOG_INFO("We parsed %d ", parsed_arg);
+        
+        if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
+            return false;
         }
-        if(try_parse_arg(&parsed_arg, &cur_pos)){
-            if (parsed_arg > 255) {
-                return false;
-            }
-            cmd->arg3 = parsed_arg;
-        }   
+        cmd->arg2 = parsed_arg;
+        NRF_LOG_INFO("We parsed %d ", parsed_arg);
+        
+        if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
+            return false;
+        }
+        cmd->arg3 = parsed_arg;
+        NRF_LOG_INFO("We parsed %d ", parsed_arg); 
     }
     else if (cmd->command_type == CMD_SET_HSV)
     {
