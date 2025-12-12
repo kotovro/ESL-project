@@ -75,6 +75,53 @@ void logs_init()
 
 
 
+void command_executor(COMMAND cmd)
+{
+    char msg[400];
+    switch(cmd.command_type)
+    {
+    case CMD_HELP:
+    {
+        strcpy(msg, HELP_MESSAGE);
+        break;                                             
+    }
+    case CMD_SET_RGB:
+    {
+        COLOR_RGB color = 
+        {
+            .r = cmd.arg1 / 255.f * 1024,
+            .g = cmd.arg2 / 255.f * 1024,
+            .b = cmd.arg3 / 255.f * 1024,
+        };
+        show_rgb_color(color);
+        snprintf(msg, sizeof(msg),
+        "Color set to: R=%u, G=%u, B=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
+        break;
+    }
+    case CMD_SET_HSV:
+    {
+        COLOR_HSV hsv = 
+        {
+            .h = cmd.arg1,
+            .s = cmd.arg2,
+            .v = cmd.arg3, 
+        };
+
+        COLOR_RGB rgb = hsv_to_rgb(hsv);
+
+        show_rgb_color(rgb);
+        snprintf(msg, sizeof(msg),
+        "Color set to: H=%u, S=%u, S=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
+        break;
+    }
+    default:
+    {
+        strcpy(msg, ERROR_MESSAGE);
+        break;
+    }
+    }
+    usb_serial_dumb_print(msg, strlen(msg));
+}
 
 void main_loop(void)
 {
@@ -110,7 +157,7 @@ int main(void)
     init_leds_init();
     init_pwm_leds();
     init_button();
-    init_usb_cli();
+    init_usb_cli(command_executor);
     main_loop();
 }
 

@@ -22,9 +22,10 @@ typedef struct
     uint8_t arg3;
 } COMMAND;
 
+typedef void  (*Command_Executor)(COMMAND);
 
-void init_usb_cli(void);
+void init_usb_cli(Command_Executor executor);
 void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
                            app_usbd_cdc_acm_user_event_t event);
-
+void usb_serial_dumb_print(char const * p_buffer, size_t len);
 #endif // CLI_UTILS_H

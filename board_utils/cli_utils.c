@@ -3,12 +3,12 @@ void init_usb_cli() {}
 #else 
 
 #include "cli_utils.h"
-#include "led_utils.h"
 
 static char m_command_buffer[MAX_COMMAND_SIZE];
 static char m_rx_buffer[READ_SIZE];
 static volatile bool tx_done = true;
 static int counter = 0;
+Command_Executor cmd_executor;
 
 APP_TIMER_DEF(parse_command_timer_id);
 
@@ -23,7 +23,7 @@ APP_USBD_CDC_ACM_GLOBAL_DEF(usb_cdc_acm,
 
 
 static void parse_command_timer_handler(void * p_context);
-void init_usb_cli()
+void init_usb_cli(Command_Executor executor)
 {                       
     app_usbd_class_inst_t const * class_cdc_acm = app_usbd_cdc_acm_class_inst_get(&usb_cdc_acm);
     ret_code_t ret = app_usbd_class_append(class_cdc_acm);
@@ -33,6 +33,7 @@ void init_usb_cli()
                             APP_TIMER_MODE_SINGLE_SHOT,
                             parse_command_timer_handler);
     APP_ERROR_CHECK(ret);
+    cmd_executor = executor;
 }
 
 bool is_command_rgb()
@@ -61,61 +62,13 @@ bool is_command_help()
 
 
 
-static void usb_serial_dumb_print(char const * p_buffer, size_t len)
+void usb_serial_dumb_print(char const * p_buffer, size_t len)
 {
 
         ret_code_t ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
                                                 p_buffer,
                                                 len);
         APP_ERROR_CHECK(ret);
-}
-
-void execute_command(COMMAND cmd)
-{
-    char msg[400];
-    switch(cmd.command_type)
-    {
-    case CMD_HELP:
-    {
-        strcpy(msg, HELP_MESSAGE);
-        break;                                             
-    }
-    case CMD_SET_RGB:
-    {
-        COLOR_RGB color = 
-        {
-            .r = cmd.arg1 / 255.f * 1024,
-            .g = cmd.arg2 / 255.f * 1024,
-            .b = cmd.arg3 / 255.f * 1024,
-        };
-        show_rgb_color(color);
-        snprintf(msg, sizeof(msg),
-        "Color set to: R=%u, G=%u, B=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
-        break;
-    }
-    case CMD_SET_HSV:
-    {
-        COLOR_HSV hsv = 
-        {
-            .h = cmd.arg1,
-            .s = cmd.arg2,
-            .v = cmd.arg3, 
-        };
-
-        COLOR_RGB rgb = hsv_to_rgb(hsv);
-
-        show_rgb_color(rgb);
-        snprintf(msg, sizeof(msg),
-        "Color set to: H=%u, S=%u, S=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
-        break;
-    }
-    default:
-    {
-        strcpy(msg, ERROR_MESSAGE);
-        break;
-    }
-    }
-    usb_serial_dumb_print(msg, strlen(msg));
 }
 
 bool try_parse_arg(uint16_t * arg, int * pos)
@@ -244,7 +197,8 @@ static void parse_command_timer_handler(void * p_context)
     COMMAND current_command = parse_command();
 
     counter = 0;
-    execute_command(current_command);
+    // execute_command(current_command);
+    cmd_executor(current_command);
 }
 
 void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
