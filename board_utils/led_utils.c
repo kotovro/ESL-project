@@ -2,29 +2,23 @@
 #include "nrfx_pwm.h"
 #include "led_utils.h"
 
-
-const int top_value = 1024; // PWM top value for 1 kHz frequency with 1 MHz base clock
 extern COLOR_HSV current_hsv;
-
-bool hue_d = DECREASE;
-bool saturation_d = DECREASE;
-bool value_d = DECREASE;
-
 
 nrf_pwm_values_individual_t led_seq[FADE_STEPS];
 
 
-
-void show_rgb_color(COLOR_RGB color) {
+void show_rgb_color(COLOR_RGB color) 
+{
     for (int i = 0; i < FADE_STEPS; i++) 
     {
-        led_seq[i].channel_1 = color.r;
-        led_seq[i].channel_2 = color.g;
-        led_seq[i].channel_3 = color.b;
+        led_seq[i].channel_1 = color.r / 255.f * MAX_PWM_VALUE;
+        led_seq[i].channel_2 = color.g / 255.f * MAX_PWM_VALUE;
+        led_seq[i].channel_3 = color.b / 255.f * MAX_PWM_VALUE;
     }
 }
 
-COLOR_RGB hsv_to_rgb(COLOR_HSV hsv) {
+COLOR_RGB hsv_to_rgb(COLOR_HSV hsv) 
+{
     float r, g, b;
     float hf = hsv.h / 60.0f;
     float sf = hsv.s / 100.0f;
@@ -45,9 +39,9 @@ COLOR_RGB hsv_to_rgb(COLOR_HSV hsv) {
         default: r = g = b = 0; break;
     }
     COLOR_RGB result_COLOR_RGB;
-    result_COLOR_RGB.r = (uint16_t)(r * top_value);
-    result_COLOR_RGB.g = (uint16_t)(g * top_value);
-    result_COLOR_RGB.b = (uint16_t)(b * top_value);
+    result_COLOR_RGB.r = (uint16_t)(r * 255);
+    result_COLOR_RGB.g = (uint16_t)(g * 255);
+    result_COLOR_RGB.b = (uint16_t)(b * 255);
     return result_COLOR_RGB;
 }
 
@@ -70,7 +64,7 @@ nrfx_pwm_config_t config_pwm0 =
     .irq_priority = NRFX_PWM_DEFAULT_CONFIG_IRQ_PRIORITY,
     .base_clock   = NRF_PWM_CLK_1MHz,
     .count_mode   = NRF_PWM_MODE_UP,
-    .top_value    = top_value,             
+    .top_value    = MAX_PWM_VALUE,             
     .load_mode    = NRF_PWM_LOAD_INDIVIDUAL,
     .step_mode    = NRF_PWM_STEP_AUTO
 };
@@ -146,73 +140,22 @@ void pattern_slow_blinking(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
         led_seq[i].channel_0 =
         (i <= FADE_STEPS / 2)
-        ? (i * top_value) / (FADE_STEPS / 2)
-        : ((FADE_STEPS - i) * top_value) / (FADE_STEPS / 2);
+        ? (i * MAX_PWM_VALUE) / (FADE_STEPS / 2)
+        : ((FADE_STEPS - i) * MAX_PWM_VALUE) / (FADE_STEPS / 2);
     }
 }
 
 void pattern_rapid_blinking(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
-        led_seq[i].channel_0 = i % 2 ? 0 : top_value;
+        led_seq[i].channel_0 = i % 2 ? 0 : MAX_PWM_VALUE;
     }      
 }
 
 void pattern_on(void) {
     for (int i = 0; i < FADE_STEPS; i++)
-        led_seq[i].channel_0 = top_value;
+        led_seq[i].channel_0 = MAX_PWM_VALUE;
 }
 
-void change_hsv(int mode) 
-{
-    if (mode == PICKING_HUE) {
-        if (hue_d == INCREASE) {
-            current_hsv.h += STEP_OF_COLOR_CHANGE;
-            if (current_hsv.h >= 360) {
-                current_hsv.h = 360;
-                hue_d = DECREASE;
-            }
-        } else {
-            current_hsv.h -= STEP_OF_COLOR_CHANGE;
-            if (current_hsv.h <= 0) {
-                current_hsv.h = 0;
-                hue_d = INCREASE;
-            }
-        }
-    } 
-    else if (mode == PICKING_SATURATION) {
-        if (saturation_d == INCREASE) {
-            current_hsv.s += STEP_OF_COLOR_CHANGE;
-            if (current_hsv.s >= 100) {
-                current_hsv.s = 100;
-                saturation_d = DECREASE;
-            }
-        } else {
-            current_hsv.s -= STEP_OF_COLOR_CHANGE;
-            if (current_hsv.s <= 0) {
-                current_hsv.s = 0;
-                saturation_d = INCREASE;
-            }
-        }
-    } 
-    else if (mode == PICKING_VALUE) {
-        if (value_d == INCREASE) {
-            current_hsv.v += STEP_OF_COLOR_CHANGE;
-            if (current_hsv.v >= 100) {
-                current_hsv.v = 100;
-                value_d = DECREASE;
-            }
-        } else {
-            current_hsv.v -= STEP_OF_COLOR_CHANGE;
-            if (current_hsv.v <= 0) {
-                current_hsv.v = 0;
-                value_d = INCREASE;
-            }
-        }
-    }
-
-    COLOR_RGB c = hsv_to_rgb(current_hsv);
-    show_rgb_color(c);
-}
 
 
 // -------------------- Init PWM --------------------

@@ -50,10 +50,14 @@
  
 #include "board_utils.h"
 COLOR_HSV current_hsv = {22, 100, 100};
+volatile bool hue_d = DECREASE;
+volatile bool saturation_d = DECREASE;
+volatile bool value_d = DECREASE;
+volatile int mode_global = SLEEP;
+
 
 void MemManage_Handler(void)
 {
-    
         NRF_LOG_INFO("Memory Manage Fault");
         NRF_LOG_PROCESS(); 
 }
@@ -73,6 +77,84 @@ void logs_init()
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 }
 
+void change_hsv() 
+{
+    if (mode_global == PICKING_HUE) {
+        if (hue_d == INCREASE) {
+            current_hsv.h += STEP_OF_COLOR_CHANGE;
+            if (current_hsv.h >= 360) {
+                current_hsv.h = 360;
+                hue_d = DECREASE;
+            }
+        } else {
+            current_hsv.h -= STEP_OF_COLOR_CHANGE;
+            if (current_hsv.h <= 0) {
+                current_hsv.h = 0;
+                hue_d = INCREASE;
+            }
+        }
+    } 
+    else if (mode_global == PICKING_SATURATION) {
+        if (saturation_d == INCREASE) {
+            current_hsv.s += STEP_OF_COLOR_CHANGE;
+            if (current_hsv.s >= 100) {
+                current_hsv.s = 100;
+                saturation_d = DECREASE;
+            }
+        } else {
+            current_hsv.s -= STEP_OF_COLOR_CHANGE;
+            if (current_hsv.s <= 0) {
+                current_hsv.s = 0;
+                saturation_d = INCREASE;
+            }
+        }
+    } 
+    else if (mode_global == PICKING_VALUE) {
+        if (value_d == INCREASE) {
+            current_hsv.v += STEP_OF_COLOR_CHANGE;
+            if (current_hsv.v >= 100) {
+                current_hsv.v = 100;
+                value_d = DECREASE;
+            }
+        } else {
+            current_hsv.v -= STEP_OF_COLOR_CHANGE;
+            if (current_hsv.v <= 0) {
+                current_hsv.v = 0;
+                value_d = INCREASE;
+            }
+        }
+    }
+
+    COLOR_RGB c = hsv_to_rgb(current_hsv);
+    NRF_LOG_INFO("R=%d, G=%d, B=%d", c.r, c.g, c.b);
+    show_rgb_color(c);
+}
+
+
+void double_click_executor()
+{   
+    if (mode_global == SLEEP)
+    {
+        mode_global = PICKING_HUE;
+        pattern_slow_blinking();     
+    }
+    else if (mode_global == PICKING_HUE)
+    {
+        mode_global = PICKING_SATURATION;
+        pattern_rapid_blinking();
+    }
+    else if (mode_global == PICKING_SATURATION)
+    {
+        mode_global = PICKING_VALUE;
+        pattern_on();
+    }
+    else if (mode_global == PICKING_VALUE)
+    {
+        mode_global = SLEEP;
+        pattern_off();
+        nvram_save_settings(current_hsv);
+    }
+}
 
 
 void command_executor(COMMAND cmd)
@@ -89,9 +171,9 @@ void command_executor(COMMAND cmd)
     {
         COLOR_RGB color = 
         {
-            .r = cmd.arg1 / 255.f * 1024,
-            .g = cmd.arg2 / 255.f * 1024,
-            .b = cmd.arg3 / 255.f * 1024,
+            .r = cmd.arg1,
+            .g = cmd.arg2,
+            .b = cmd.arg3,
         };
         show_rgb_color(color);
         snprintf(msg, sizeof(msg),
@@ -111,7 +193,7 @@ void command_executor(COMMAND cmd)
 
         show_rgb_color(rgb);
         snprintf(msg, sizeof(msg),
-        "Color set to: H=%u, S=%u, S=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
+        "Color set to: H=%u, S=%u, V=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
         break;
     }
     default:
@@ -145,7 +227,6 @@ int main(void)
             | SCB_SHCSR_BUSFAULTENA_Msk
             | SCB_SHCSR_USGFAULTENA_Msk;
     logs_init();
-    timers_init();
     if (is_version_changed(CURRENT_VERSION))
     {
         update_version(CURRENT_VERSION);    
@@ -156,7 +237,7 @@ int main(void)
     } 
     init_leds_init();
     init_pwm_leds();
-    init_button();
+    init_button(double_click_executor, change_hsv);
     init_usb_cli(command_executor);
     main_loop();
 }

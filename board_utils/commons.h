@@ -57,6 +57,7 @@ typedef struct {
     uint16_t b;
 } COLOR_RGB;
 
+#define MAX_PWM_VALUE 1024 
 // Memory address for NVRAM storage
 
 #ifndef BOOTLOADER_START_ADDR

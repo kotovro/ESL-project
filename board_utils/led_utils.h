@@ -13,8 +13,10 @@ typedef enum {
     LED_COUNT
 } LedId;
 
-
-
+void pattern_slow_blinking(void);
+void pattern_rapid_blinking(void);
+void pattern_off(void);
+void pattern_on(void);
 void show_rgb_color(COLOR_RGB color);
 void init_leds_init(void);
 void init_pwm_leds(void);

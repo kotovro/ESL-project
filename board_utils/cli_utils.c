@@ -1,13 +1,12 @@
 #if ESTC_USB_CLI_ENABLED == 0
-void init_usb_cli() {}
+void init_usb_cli(Command_Executor executor) {}
 #else 
 
 #include "cli_utils.h"
 
 static char m_command_buffer[MAX_COMMAND_SIZE];
 static char m_rx_buffer[READ_SIZE];
-static volatile bool tx_done = true;
-static int counter = 0;
+static volatile bool m_tx_done = true;
 Command_Executor cmd_executor;
 
 APP_TIMER_DEF(parse_command_timer_id);
@@ -74,11 +73,12 @@ void usb_serial_dumb_print(char const * p_buffer, size_t len)
 bool try_parse_arg(uint16_t * arg, int * pos)
 {
     uint16_t parsed_arg = 0;
-    while((*pos < counter) && (m_command_buffer[*pos] == ' '))
+    int max_pos = strlen(m_command_buffer);
+    while((*pos < max_pos) && (m_command_buffer[*pos] == ' '))
         *pos = *pos + 1;
 
     int digits = 0;
-    while(*pos < counter && m_command_buffer[*pos] != ' ')
+    while(*pos < max_pos && m_command_buffer[*pos] != ' ')
     {
         if (m_command_buffer[*pos] < '0' || m_command_buffer[*pos] > '9')
             return false; // not a digit
@@ -97,7 +97,7 @@ bool try_parse_args(COMMAND * cmd)
     int cur_pos = 4;
     if (cmd->command_type == CMD_HELP)
     {
-        if (counter == 4 || m_command_buffer[cur_pos] == ' ')
+        if (strlen(m_command_buffer) == 4 || m_command_buffer[cur_pos] == ' ')
             return true;
     }
     else if (cmd->command_type == CMD_SET_RGB)
@@ -145,7 +145,7 @@ bool try_parse_args(COMMAND * cmd)
 COMMAND parse_command()
 {
     COMMAND parsed_command = {CMD_UNKNOWN, 0, 0, 0};
-    if (counter < 4) {
+    if (strlen(m_command_buffer) < 4) {
         NRF_LOG_INFO("Invalid command detected");
     }
     else if (is_command_rgb()) 
@@ -193,10 +193,10 @@ COMMAND parse_command()
 
 static void parse_command_timer_handler(void * p_context)
 {
-    NRF_LOG_INFO("We will try to parse, counter = %d", counter);
+    // NRF_LOG_INFO("We will try to parse, m_counter = %d", m_counter);
     COMMAND current_command = parse_command();
 
-    counter = 0;
+    m_command_buffer[0] = '\0';
     // execute_command(current_command);
     cmd_executor(current_command);
 }
@@ -208,7 +208,7 @@ void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
     {
     case APP_USBD_CDC_ACM_USER_EVT_PORT_OPEN:
     {
-        counter = 0;
+        m_command_buffer[0] = '\0';
         ret_code_t ret;
         ret = app_usbd_cdc_acm_read(&usb_cdc_acm, m_rx_buffer, READ_SIZE);
         UNUSED_VARIABLE(ret);
@@ -220,7 +220,7 @@ void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
     }
     case APP_USBD_CDC_ACM_USER_EVT_TX_DONE:
     {
-        tx_done = true;
+        m_tx_done = true;
         NRF_LOG_INFO("tx done");
         break;
     }
@@ -240,15 +240,21 @@ void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
             if (m_rx_buffer[0] == '\r' || m_rx_buffer[0] == '\n')
             {
                 ret = app_usbd_cdc_acm_write(&usb_cdc_acm, "\r\n", 2);
+                m_command_buffer[strlen(m_command_buffer)] = '\0';
                 app_timer_start(parse_command_timer_id, 5, NULL);
             }
             else
             {
                 ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
                                              m_rx_buffer,
-                                             READ_SIZE);                              
-                m_command_buffer[counter] = m_rx_buffer[0];
-                counter++;
+                                             READ_SIZE);
+
+                int cur_len = strlen(m_command_buffer);
+                if (cur_len < MAX_COMMAND_SIZE - 1)
+                {
+                    m_command_buffer[cur_len] = m_rx_buffer[0];
+                    m_command_buffer[cur_len + 1] = '\0';
+                }                         
             }
 
             /* Fetch data until internal buffer is empty */
