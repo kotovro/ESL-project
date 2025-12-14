@@ -1,13 +1,16 @@
+#include "cli_utils.h"
+
+
+Command_Executor cmd_executor;
+
 #if ESTC_USB_CLI_ENABLED == 0
 void init_usb_cli(Command_Executor executor) {}
+void usb_serial_dumb_print(char const * p_buffer, size_t len) {}
 #else 
-
-#include "cli_utils.h"
 
 static char m_command_buffer[MAX_COMMAND_SIZE];
 static char m_rx_buffer[READ_SIZE];
 static volatile bool m_tx_done = true;
-Command_Executor cmd_executor;
 
 APP_TIMER_DEF(parse_command_timer_id);
 
