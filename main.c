@@ -77,6 +77,7 @@ void logs_init()
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 }
 
+
 void change_hsv() 
 {
     if (mode_global == PICKING_HUE) {
@@ -156,54 +157,162 @@ void double_click_executor()
     }
 }
 
-
-void command_executor(COMMAND cmd)
+void unknown_command_executor(char* args)
 {
-    char msg[400];
-    switch(cmd.command_type)
+    char msg[100];
+    strcpy(msg, ERROR_MESSAGE);
+    usb_serial_dumb_print(msg, strlen(msg));
+}
+
+bool try_parse_int_arg(char * carg, int * pos, uint16_t * arg)
+{
+    uint16_t parsed_arg = 0;
+    int max_pos = strlen(carg);
+    while((*pos < max_pos) && (carg[*pos] == ' '))
+        *pos = *pos + 1;
+
+    int digits = 0;
+    while(*pos < max_pos && carg[*pos] != ' ')
     {
-    case CMD_HELP:
-    {
-        strcpy(msg, HELP_MESSAGE);
-        break;                                             
+        if (carg[*pos] < '0' || carg[*pos] > '9')
+            return false; // not a digit
+        if (++digits > 3)
+            return false; // too big number
+        parsed_arg = parsed_arg * 10 + (uint16_t)(carg[*pos] - '0');
+        *pos = *pos + 1;
     }
-    case CMD_SET_RGB:
+
+    *arg = parsed_arg;
+    return digits > 0;
+}
+
+
+void set_rgb_executor(char* args)
+{
+    char msg[100];
+    COLOR_RGB color = 
     {
-        COLOR_RGB color = 
-        {
-            .r = cmd.arg1,
-            .g = cmd.arg2,
-            .b = cmd.arg3,
-        };
+        .r = 0,
+        .g = 0,
+        .b = 0,
+    };
+    bool is_args_valid = true;
+    int cur_pos = 0;
+    if(!try_parse_int_arg(args, &cur_pos, &(color.r)) || color.r > 255){
+        is_args_valid = false;
+    }     
+    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(color.g)) || color.g > 255){
+        is_args_valid = false;
+    } 
+    
+    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(color.b)) || color.b > 255){
+        is_args_valid = false;
+    }
+
+    if (is_args_valid)
+    {
         show_rgb_color(color);
         snprintf(msg, sizeof(msg),
-        "Color set to: R=%u, G=%u, B=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
-        break;
+                "Color set to: R=%u, G=%u, B=%u\r\n", color.r, color.g, color.b);
+        
+        usb_serial_dumb_print(msg, strlen(msg));
     }
-    case CMD_SET_HSV:
+    else 
     {
-        COLOR_HSV hsv = 
-        {
-            .h = cmd.arg1,
-            .s = cmd.arg2,
-            .v = cmd.arg3, 
-        };
+        unknown_command_executor(args);
+        NRF_LOG_INFO("Invalid set rgb arguments detected: %s", args);
+    }
+}
 
-        COLOR_RGB rgb = hsv_to_rgb(hsv);
+
+
+void set_hsv_executor(char* args)
+{
+    char msg[100];
+    COLOR_HSV color = 
+    {
+        .h = 0,
+        .s = 0,
+        .v = 0,
+    };
+    
+    int cur_pos = 0;
+    bool is_args_valid = true;
+    if(!try_parse_int_arg(args, &cur_pos, &(color.h)) || color.h > 360){
+        is_args_valid = false;
+    }
+
+    uint16_t parsed_value = 0;
+    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &parsed_value) || parsed_value > 100){
+        is_args_valid = false;
+    } else {
+        color.s = (char)parsed_value;
+    }
+    
+    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &parsed_value) || parsed_value > 100){
+        is_args_valid = false;
+    } else {
+        color.v = (char)parsed_value;
+    }
+
+    if (is_args_valid)
+    {
+        COLOR_RGB rgb = hsv_to_rgb(color);
 
         show_rgb_color(rgb);
         snprintf(msg, sizeof(msg),
-        "Color set to: H=%u, S=%u, V=%u\r\n", cmd.arg1, cmd.arg2, cmd.arg3);
-        break;
+                "Color set to: H=%u, S=%u, V=%u\r\n", color.h, color.s, color.v);
+        
+        usb_serial_dumb_print(msg, strlen(msg));
     }
-    default:
+    else 
     {
-        strcpy(msg, ERROR_MESSAGE);
-        break;
+        unknown_command_executor(args);
+        NRF_LOG_INFO("Invalid set hsv arguments detected: %s", args);
     }
+    
+}
+
+
+void print_help_message(char* args);
+
+COMMAND_DEFINITION command_definitions[] = {
+    {
+        .command_type = CMD_SET_RGB,
+        .name = "RGB",
+        .description = "RGB <red> <green> <blue> - the device sets current color to specified one.\r\n",
+        .executor = set_rgb_executor
+    },
+    {
+        .command_type = CMD_SET_HSV,
+        .name = "HSV",
+        .description = "HSV <hue> <saturation> <value> - the same with RGB, but color is specified in HSV.\r\n",
+        .executor =  set_hsv_executor
+    },
+    {
+        .command_type = CMD_HELP,
+        .name = "HELP",
+        .description = "HELP - prints this message.\r\n",
+        .executor = print_help_message
+    }
+};
+
+void print_help_message(char* args)
+{
+    char msg[1024];
+    msg[0] = '\0';
+
+    strncat(msg, "Supported commands:\r\n", sizeof(msg) - strlen(msg) - 1);
+    for (size_t i = 0; i < sizeof(command_definitions) / sizeof(COMMAND_DEFINITION); i++)
+    {
+        if(command_definitions[i].command_type != CMD_UNKNOWN) 
+        {
+            strncat(msg, command_definitions[i].description, sizeof(msg) - strlen(msg) - 1);
+        }
     }
     usb_serial_dumb_print(msg, strlen(msg));
 }
+
 
 void main_loop(void)
 {
@@ -238,7 +347,8 @@ int main(void)
     init_leds_init();
     init_pwm_leds();
     init_button(double_click_executor, change_hsv);
-    init_usb_cli(command_executor);
+    init_usb_cli(command_definitions, sizeof(command_definitions) / sizeof(COMMAND_DEFINITION),
+                unknown_command_executor);
     main_loop();
 }
 

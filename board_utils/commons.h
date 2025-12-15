@@ -46,7 +46,7 @@
 #define DECREASE false
 
 typedef struct {
-    int16_t h;
+    uint16_t h;
     char s;
     char v;
 } COLOR_HSV;

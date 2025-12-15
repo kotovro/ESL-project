@@ -1,10 +1,13 @@
 #include "cli_utils.h"
+#include <ctype.h>
 
-
-Command_Executor cmd_executor;
+static COMMAND_DEFINITION* m_command_definitions;
+static Command_Executor m_default_executor;
+static size_t m_command_definitions_size;
 
 #if ESTC_USB_CLI_ENABLED == 0
-void init_usb_cli(Command_Executor executor) {}
+void init_usb_cli(COMMAND_DEFINITION* known_commands, size_t known_commands_size,
+                Command_Executor default_command) {}
 void usb_serial_dumb_print(char const * p_buffer, size_t len) {}
 #else 
 
@@ -25,8 +28,12 @@ APP_USBD_CDC_ACM_GLOBAL_DEF(usb_cdc_acm,
 
 
 static void parse_command_timer_handler(void * p_context);
-void init_usb_cli(Command_Executor executor)
+void init_usb_cli(COMMAND_DEFINITION* known_commands, size_t known_commands_size,
+                Command_Executor default_command)
 {                       
+    m_command_definitions = known_commands;
+    m_command_definitions_size = known_commands_size;
+    m_default_executor = default_command;
     app_usbd_class_inst_t const * class_cdc_acm = app_usbd_cdc_acm_class_inst_get(&usb_cdc_acm);
     ret_code_t ret = app_usbd_class_append(class_cdc_acm);
     APP_ERROR_CHECK(ret);
@@ -35,173 +42,87 @@ void init_usb_cli(Command_Executor executor)
                             APP_TIMER_MODE_SINGLE_SHOT,
                             parse_command_timer_handler);
     APP_ERROR_CHECK(ret);
-    cmd_executor = executor;
 }
 
-bool is_command_rgb()
+bool is_command_found(COMMAND_DEFINITION cmd_def)
 {
-    return (m_command_buffer[0] == 'R' || m_command_buffer[0] == 'r')
-        && (m_command_buffer[1] == 'G' || m_command_buffer[1] == 'g')
-        && (m_command_buffer[2] == 'B' || m_command_buffer[2] == 'b')
-        && (m_command_buffer[3] == ' ');
-}
-
-bool is_command_hsv()
-{
-    return (m_command_buffer[0] == 'H' || m_command_buffer[0] == 'h')
-        && (m_command_buffer[1] == 'S' || m_command_buffer[1] == 's')
-        && (m_command_buffer[2] == 'V' || m_command_buffer[2] == 'v')
-        && (m_command_buffer[3] == ' ');
-}
-
-bool is_command_help()
-{
-    return (m_command_buffer[0] == 'H' || m_command_buffer[0] == 'h')
-        && (m_command_buffer[1] == 'E' || m_command_buffer[1] == 'e')
-        && (m_command_buffer[2] == 'L' || m_command_buffer[2] == 'l')
-        && (m_command_buffer[3] == 'P' || m_command_buffer[3] == 'p');
-}
-
-
-
-void usb_serial_dumb_print(char const * p_buffer, size_t len)
-{
-
-        ret_code_t ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
-                                                p_buffer,
-                                                len);
-        APP_ERROR_CHECK(ret);
-}
-
-bool try_parse_arg(uint16_t * arg, int * pos)
-{
-    uint16_t parsed_arg = 0;
-    int max_pos = strlen(m_command_buffer);
-    while((*pos < max_pos) && (m_command_buffer[*pos] == ' '))
-        *pos = *pos + 1;
-
-    int digits = 0;
-    while(*pos < max_pos && m_command_buffer[*pos] != ' ')
+    if (strlen(m_command_buffer) < strlen(cmd_def.name)) 
     {
-        if (m_command_buffer[*pos] < '0' || m_command_buffer[*pos] > '9')
-            return false; // not a digit
-        if (++digits > 3)
-            return false; // too big number
-        parsed_arg = parsed_arg * 10 + (uint16_t)(m_command_buffer[*pos] - '0');
-        *pos = *pos + 1;
+        return false;
     }
-
-    *arg = parsed_arg;
-    return digits > 0;
-}
-
-bool try_parse_args(COMMAND * cmd)
-{
-    int cur_pos = 4;
-    if (cmd->command_type == CMD_HELP)
+    for (size_t i = 0; i < strlen(cmd_def.name); i++) 
     {
-        if (strlen(m_command_buffer) == 4 || m_command_buffer[cur_pos] == ' ')
-            return true;
-    }
-    else if (cmd->command_type == CMD_SET_RGB)
-    {
-        uint16_t parsed_arg = 0;
-        if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
+        if (tolower((unsigned char) m_command_buffer[i]) != tolower((unsigned char) cmd_def.name[i])) 
+        {
             return false;
         }
-        cmd->arg1 = parsed_arg;
-        if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
-            return false;
-        }
-        cmd->arg2 = parsed_arg;
-        
-        if(!try_parse_arg(&parsed_arg, &cur_pos) || parsed_arg > 255){
-            return false;
-        }
-        cmd->arg3 = parsed_arg;
     }
-    else if (cmd->command_type == CMD_SET_HSV)
+    if (m_command_buffer[strlen(cmd_def.name)] != ' ' &&
+        m_command_buffer[strlen(cmd_def.name)] != '\0') 
     {
-        uint16_t parsed_arg = 0;
-        if(try_parse_arg(&parsed_arg, &cur_pos)){
-            if (parsed_arg > 360) {
-                return false;
-            }
-            cmd->arg1 = parsed_arg;
-        }
-        if(try_parse_arg(&parsed_arg, &cur_pos)){
-            if (parsed_arg > 100) {
-                return false;
-            }
-            cmd->arg2 = parsed_arg;
-        }
-        if(try_parse_arg(&parsed_arg, &cur_pos)){
-            if (parsed_arg > 100) {
-                return false;
-            }
-            cmd->arg3 = parsed_arg;
-        }   
+        return false;
     }
     return true;
 }
 
-COMMAND parse_command()
+void get_argument_string(char* arguments, size_t cmd_name_length, int max_argument_length)
 {
-    COMMAND parsed_command = {CMD_UNKNOWN, 0, 0, 0};
-    if (strlen(m_command_buffer) < 4) {
-        NRF_LOG_INFO("Invalid command detected");
-    }
-    else if (is_command_rgb()) 
+    int cur_pos = 0;
+    
+    while(m_command_buffer[cmd_name_length + cur_pos] == ' ')
     {
-        parsed_command.command_type = CMD_SET_RGB;
-        if (try_parse_args(&parsed_command)) 
-        {
-            NRF_LOG_INFO("Valid set rgb command detected");
-        }
-        else
-        {
-            parsed_command.command_type = CMD_UNKNOWN;
-            NRF_LOG_INFO("Invalid set rgb arguments detected");
-        }
+        cur_pos++;
     }
-    else if (is_command_hsv()) 
+    int i = 0;
+    while(m_command_buffer[cmd_name_length + cur_pos] != '\0' && i < max_argument_length - 2)
     {
-        parsed_command.command_type = CMD_SET_HSV;
-        if (try_parse_args(&parsed_command)) 
-        {
-            NRF_LOG_INFO("Valid set hsv command detected");
-        }
-        else
-        {
-            parsed_command.command_type = CMD_UNKNOWN;
-            NRF_LOG_INFO("Invalid set hsv arguments detected");
-        }
+        arguments[i] = m_command_buffer[cmd_name_length + cur_pos];
+        cur_pos++;
+        i++;
+    }
+    arguments[i] = '\0';
+    
+}
 
-    }
-    else if (is_command_help())
+void usb_serial_dumb_print(char const * p_buffer, size_t len)
+{
+    ret_code_t ret = app_usbd_cdc_acm_write(&usb_cdc_acm,
+                                            p_buffer,
+                                            len);
+    APP_ERROR_CHECK(ret);
+}
+
+
+void parse_command()
+{
+    Command_Executor executor = m_default_executor;
+    char arguments[32];
+    size_t cmd_name_length = 0;
+
+    bool is_command_recognized = false;
+    for (int i = 0; i < m_command_definitions_size; i++) 
     {
-        parsed_command.command_type = CMD_HELP;
-        if (try_parse_args(&parsed_command)) 
+        if (is_command_found(m_command_definitions[i])) 
         {
-            NRF_LOG_INFO("Valid help command detected");
-        }
-        else
-        {
-            parsed_command.command_type = CMD_UNKNOWN;
-            NRF_LOG_INFO("Invalid help command detected");
+            executor = m_command_definitions[i].executor;
+            cmd_name_length = strlen(m_command_definitions[i].name);
+            is_command_recognized = true;
+            break;
         }
     }
-    return parsed_command;
+    if (is_command_recognized) 
+    {
+        get_argument_string(arguments, cmd_name_length, 32);
+    }
+    executor(arguments);
 }
 
 static void parse_command_timer_handler(void * p_context)
 {
     // NRF_LOG_INFO("We will try to parse, m_counter = %d", m_counter);
-    COMMAND current_command = parse_command();
+    parse_command();
 
     m_command_buffer[0] = '\0';
-    // execute_command(current_command);
-    cmd_executor(current_command);
 }
 
 void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
@@ -244,6 +165,7 @@ void usb_ev_handler(app_usbd_class_inst_t const * p_inst,
             {
                 ret = app_usbd_cdc_acm_write(&usb_cdc_acm, "\r\n", 2);
                 m_command_buffer[strlen(m_command_buffer)] = '\0';
+                NRF_LOG_INFO("Received command len: %d", strlen(m_command_buffer));
                 app_timer_start(parse_command_timer_id, 5, NULL);
             }
             else
