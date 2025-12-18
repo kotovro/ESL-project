@@ -2,9 +2,33 @@
 #include "nrfx_pwm.h"
 #include "led_utils.h"
 
-extern COLOR_HSV current_hsv;
+extern COLOR_DESCRIPTION current_color_description;
 
 nrf_pwm_values_individual_t led_seq[FADE_STEPS];
+
+void show_color(COLOR_DESCRIPTION color) 
+{
+    COLOR_RGB rgb_color;
+    if (color.colorType == 0) // RGB
+    {
+        rgb_color.r = color.first_component;
+        rgb_color.g = (uint16_t)color.second_component;
+        rgb_color.b = (uint16_t)color.third_component;
+    }
+    else if (color.colorType == 1) // HSV
+    {
+        COLOR_HSV hsv_color;
+        hsv_color.h = color.first_component;
+        hsv_color.s = (char)color.second_component;
+        hsv_color.v = (char)color.third_component;
+        rgb_color = hsv_to_rgb(hsv_color);
+    }
+    else 
+    {
+        return; // Unknown color type
+    }
+    show_rgb_color(rgb_color);
+}
 
 
 void show_rgb_color(COLOR_RGB color) 
@@ -121,15 +145,6 @@ nrf_pwm_sequence_t seq_smooth = {
     .end_delay = 0
 };
 
-void initial_color_rgb() {
-    COLOR_RGB c = hsv_to_rgb(current_hsv);
-    for (int i = 0; i < FADE_STEPS; i++) 
-    {
-        led_seq[i].channel_0 = 0;
-    }
-    show_rgb_color(c);
-}
-
 void pattern_off(void) {
     for (int i = 0; i < FADE_STEPS; i++) {
         led_seq[i].channel_0 = 0;
@@ -161,6 +176,6 @@ void pattern_on(void) {
 // -------------------- Init PWM --------------------
 void init_pwm_leds(void) {
     nrfx_pwm_init(&m_pwn_status_led, &config_pwm0, NULL);
-    initial_color_rgb();
+    show_color(current_color_description);
     nrfx_pwm_simple_playback(&m_pwn_status_led, &seq_smooth, 1, NRFX_PWM_FLAG_LOOP);
 }

@@ -39,14 +39,20 @@ bool is_version_changed(uint32_t version)
     return is_version_changed;
 }
 
-void nvram_save_settings(COLOR_HSV current_color)
+void nvram_save_settings(COLOR_DESCRIPTION current_color)
 {
     COLOR_HSV stored_color = uint_to_color_hsv(*(uint32_t*)HSV_SETTING_ADDR);
-    if (stored_color.h == current_color.h &&
-        stored_color.s == current_color.s &&
-        stored_color.v == current_color.v)
+    if (stored_color.h == current_color.first_component &&
+        stored_color.s == current_color.second_component &&
+        stored_color.v == current_color.third_component)
         return;
-    if (is_erase_needed || !nrfx_nvmc_word_writable_check((uint32_t)HSV_SETTING_ADDR, color_hsv_to_uint(current_color))) 
+    COLOR_HSV current_color_hsv = 
+    {
+        .h = current_color.first_component,
+        .s = (char)current_color.second_component,
+        .v = (char)current_color.third_component,
+    };
+    if (is_erase_needed || !nrfx_nvmc_word_writable_check((uint32_t)HSV_SETTING_ADDR, color_hsv_to_uint(current_color_hsv))) 
     {
         nrfx_nvmc_page_erase(APPDATA_START_ADDR);
         nrfx_nvmc_word_write(VERSION_SETTING_ADDRESS, CURRENT_VERSION);
@@ -57,14 +63,14 @@ void nvram_save_settings(COLOR_HSV current_color)
         is_erase_needed = true;
     }
 
-    nrfx_nvmc_word_write(HSV_SETTING_ADDR, color_hsv_to_uint(current_color));
+    nrfx_nvmc_word_write(HSV_SETTING_ADDR, color_hsv_to_uint(current_color_hsv));
     while (!nrfx_nvmc_write_done_check()) {
     }
     NRF_LOG_INFO("Setteings successfully saved");
     LOG_BACKEND_USB_PROCESS();
 }
 
-void nvram_load_settings(COLOR_HSV* current_color)
+void nvram_load_settings(COLOR_DESCRIPTION* current_color)
 {
     COLOR_HSV stored_color = uint_to_color_hsv(*(uint32_t*)HSV_SETTING_ADDR);
     if (stored_color.h > 360 ||
@@ -72,7 +78,7 @@ void nvram_load_settings(COLOR_HSV* current_color)
         stored_color.v > 100) 
         return;
     
-    current_color->h = stored_color.h;
-    current_color->s = stored_color.s;
-    current_color->v = stored_color.v;
+    current_color->first_component = stored_color.h;
+    current_color->second_component = stored_color.s;
+    current_color->third_component = stored_color.v;
 }

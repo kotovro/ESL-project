@@ -46,6 +46,17 @@
 #define DECREASE false
 
 typedef struct {
+    // 0 - RGB
+    // 1 - HSV
+    // 255 - Unknown
+    char colorType; 
+    char colorName[11];
+    uint16_t first_component;
+    char second_component;
+    char third_component;
+} COLOR_DESCRIPTION;
+
+typedef struct {
     uint16_t h;
     char s;
     char v;

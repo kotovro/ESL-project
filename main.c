@@ -49,7 +49,7 @@
  */
  
 #include "board_utils.h"
-COLOR_HSV current_hsv = {22, 100, 100};
+COLOR_DESCRIPTION current_color_description = {1, "LOL\0", 22, 100, 100};
 volatile bool hue_d = DECREASE;
 volatile bool saturation_d = DECREASE;
 volatile bool value_d = DECREASE;
@@ -80,55 +80,58 @@ void logs_init()
 
 void change_hsv() 
 {
+    
+    if (current_color_description.colorType != 1) 
+    {
+        return; // Not in HSV mode
+    }
+
     if (mode_global == PICKING_HUE) {
         if (hue_d == INCREASE) {
-            current_hsv.h += STEP_OF_COLOR_CHANGE;
-            if (current_hsv.h >= 360) {
-                current_hsv.h = 360;
+            current_color_description.first_component+= STEP_OF_COLOR_CHANGE;
+            if (current_color_description.first_component>= 360) {
+                current_color_description.first_component= 360;
                 hue_d = DECREASE;
             }
         } else {
-            current_hsv.h -= STEP_OF_COLOR_CHANGE;
-            if (current_hsv.h <= 0) {
-                current_hsv.h = 0;
+            current_color_description.first_component-= STEP_OF_COLOR_CHANGE;
+            if (current_color_description.first_component<= 0) {
+                current_color_description.first_component= 0;
                 hue_d = INCREASE;
             }
         }
     } 
     else if (mode_global == PICKING_SATURATION) {
         if (saturation_d == INCREASE) {
-            current_hsv.s += STEP_OF_COLOR_CHANGE;
-            if (current_hsv.s >= 100) {
-                current_hsv.s = 100;
+            current_color_description.second_component += STEP_OF_COLOR_CHANGE;
+            if (current_color_description.second_component >= 100) {
+                current_color_description.second_component = 100;
                 saturation_d = DECREASE;
             }
         } else {
-            current_hsv.s -= STEP_OF_COLOR_CHANGE;
-            if (current_hsv.s <= 0) {
-                current_hsv.s = 0;
+            current_color_description.second_component -= STEP_OF_COLOR_CHANGE;
+            if (current_color_description.second_component <= 0) {
+                current_color_description.second_component = 0;
                 saturation_d = INCREASE;
             }
         }
     } 
     else if (mode_global == PICKING_VALUE) {
         if (value_d == INCREASE) {
-            current_hsv.v += STEP_OF_COLOR_CHANGE;
-            if (current_hsv.v >= 100) {
-                current_hsv.v = 100;
+            current_color_description.third_component += STEP_OF_COLOR_CHANGE;
+            if (current_color_description.third_component >= 100) {
+                current_color_description.third_component = 100;
                 value_d = DECREASE;
             }
         } else {
-            current_hsv.v -= STEP_OF_COLOR_CHANGE;
-            if (current_hsv.v <= 0) {
-                current_hsv.v = 0;
+            current_color_description.third_component -= STEP_OF_COLOR_CHANGE;
+            if (current_color_description.third_component <= 0) {
+                current_color_description.third_component = 0;
                 value_d = INCREASE;
             }
         }
     }
-
-    COLOR_RGB c = hsv_to_rgb(current_hsv);
-    NRF_LOG_INFO("R=%d, G=%d, B=%d", c.r, c.g, c.b);
-    show_rgb_color(c);
+    show_color(current_color_description);
 }
 
 
@@ -153,7 +156,7 @@ void double_click_executor()
     {
         mode_global = SLEEP;
         pattern_off();
-        nvram_save_settings(current_hsv);
+        nvram_save_settings(current_color_description);
     }
 }
 
@@ -354,7 +357,7 @@ int main(void)
     } 
     else
     {
-        nvram_load_settings(&current_hsv);
+        nvram_load_settings(&current_color_description);
     } 
     init_leds_init();
     init_pwm_leds();
