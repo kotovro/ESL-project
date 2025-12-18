@@ -295,6 +295,18 @@ COMMAND_DEFINITION command_definitions[] = {
         .description = "HELP - prints this message.\r\n",
         .executor = print_help_message
     }
+    // {
+    //     .command_type = CMD_ADD_RGB,
+    //     .name = "ADD_RGB",
+    //     .description = "ADD_RGB <red> <green> <blue> - the device adds specified color to the list of stored.\r\n",
+    //     .executor = set_rgb_executor
+    // },
+    // {
+    //     .command_type = LIST_COLORS,
+    //     .name = "LIST_COLORS",
+    //     .description = "LIST_COLORS - prints all stored colors.\r\n",
+    //     .executor = list_colors_executor
+    // }
 };
 
 void print_help_message(char* args)
