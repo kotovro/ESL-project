@@ -52,8 +52,8 @@ typedef struct {
     char colorType; 
     char colorName[11];
     uint16_t first_component;
-    char second_component;
-    char third_component;
+    uint8_t second_component;
+    uint8_t third_component;
 } COLOR_DESCRIPTION;
 
 typedef struct {
