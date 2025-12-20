@@ -71,6 +71,13 @@ typedef struct {
     uint16_t b;
 } COLOR_RGB;
 
+
+typedef struct {
+    COLOR_HSV saved_color;
+    uint32_t version;
+    COLOR_DESCRIPTION colorPalette[AVAILABLE_COLOR_SLOTS]; 
+} SETTINGS;
+
 #define MAX_PWM_VALUE 1024 
 // Memory address for NVRAM storage
 

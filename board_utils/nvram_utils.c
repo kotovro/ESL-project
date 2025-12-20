@@ -66,19 +66,11 @@ void nvram_save_settings(COLOR_DESCRIPTION current_color)
     nrfx_nvmc_word_write(HSV_SETTING_ADDR, color_hsv_to_uint(current_color_hsv));
     while (!nrfx_nvmc_write_done_check()) {
     }
-    NRF_LOG_INFO("Setteings successfully saved");
+    NRF_LOG_INFO("Settings successfully saved");
     LOG_BACKEND_USB_PROCESS();
 }
 
-void nvram_load_settings(COLOR_DESCRIPTION* current_color)
+void nvram_load_settings(uint32_t* settings, size_t settings_size)
 {
-    COLOR_HSV stored_color = uint_to_color_hsv(*(uint32_t*)HSV_SETTING_ADDR);
-    if (stored_color.h > 360 ||
-        stored_color.s > 100 ||
-        stored_color.v > 100) 
-        return;
-    
-    current_color->first_component = stored_color.h;
-    current_color->second_component = stored_color.s;
-    current_color->third_component = stored_color.v;
+    memcpy(settings, (uint32_t*)APPDATA_START_ADDR, settings_size);
 }

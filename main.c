@@ -57,6 +57,8 @@
 #include "add_hsv_command.h"
 #include "apply_color_command.h"
 #include "list_colors_command.h"
+
+SETTINGS settings;
 COLOR_DESCRIPTION current_color_description = {1, "LOL\0", 22, 100, 100};
 volatile bool hue_d = DECREASE;
 volatile bool saturation_d = DECREASE;
@@ -179,15 +181,6 @@ void fill_command_definitions()
     command_definitions[5] = apply_color_command;
     command_definitions[6] = list_colors_command;
 
-    // COMMAND_DEFINITION command_definitions[] = {
-    // set_rgb_command,
-    // set_hsv_command,
-    // help_command,
-    // add_rgb_command,
-    // add_hsv_command,
-    // apply_color_command,
-    // list_colors_command,
-
 
     // // {
     // //     .command_type = CMD_SAVE_COLORS,
@@ -197,8 +190,6 @@ void fill_command_definitions()
     // // },
     // };
 }
-
-
 
 void main_loop(void)
 {
@@ -213,6 +204,26 @@ void main_loop(void)
         __WFE();
         __SEV();
         __WFE();
+    }
+}
+
+void read_current_color_from_nvm()
+{   
+    if (settings.saved_color.h > 360 ||
+        settings.saved_color.s > 100 ||
+        settings.saved_color.v > 100) 
+        return;
+    
+    current_color_description.first_component = settings.saved_color.h;
+    current_color_description.second_component = settings.saved_color.s;
+    current_color_description.third_component = settings.saved_color.v;
+}
+
+void read_palette_from_nvm()
+{
+    for (int i = 0; i < AVAILABLE_COLOR_SLOTS; i++) 
+    {
+        colorPalette[i] = settings.colorPalette[i];
     }
 }
 
@@ -231,15 +242,17 @@ int main(void)
     } 
     else
     {
-        nvram_load_settings(&current_color_description);
+        nvram_load_settings((uint32_t*)&settings, sizeof(settings));
+        read_current_color_from_nvm();
+        read_palette_from_nvm();
+        
     } 
     init_leds_init();
     init_pwm_leds();
     init_button(double_click_executor, change_hsv);
     init_usb_cli(command_definitions, sizeof(command_definitions) / sizeof(COMMAND_DEFINITION),
                 unknown_command_executor);
-
-                main_loop();
+    main_loop();
 
 }
 /**

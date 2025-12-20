@@ -1,7 +1,5 @@
 #include "command_utils.h"
 
-extern COMMAND_DEFINITION command_definitions[];
-
 void print_help_message(char* args)
 {
     char msg[1024];
