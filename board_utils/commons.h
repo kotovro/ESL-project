@@ -15,7 +15,8 @@
 #include "nrfx_clock.h"
 
 #define CURRENT_VERSION ((uint32_t)3)
-
+#define AVAILABLE_COMMANDS_SLOTS 7
+#define AVAILABLE_COLOR_SLOTS 10
 
 // --- Button settings ---
 #define BUTTON_PIN          38
@@ -44,6 +45,8 @@
 // --- Directions ---
 #define INCREASE true
 #define DECREASE false
+
+
 
 typedef struct {
     // 0 - RGB

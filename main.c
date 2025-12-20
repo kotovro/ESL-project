@@ -49,24 +49,19 @@
  */
  
 #include "board_utils.h"
+#include "unknown_command.h"
+#include "set_rgb_command.h"
+#include "set_hsv_command.h"
+#include "help_command.h"
+#include "add_rgb_command.h"
+#include "add_hsv_command.h"
+#include "apply_color_command.h"
+#include "list_colors_command.h"
 COLOR_DESCRIPTION current_color_description = {1, "LOL\0", 22, 100, 100};
-COLOR_DESCRIPTION listOfColorDescriptions[10] = {
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0},
-    {255, "UNK\0", 0, 0, 0}
-};
 volatile bool hue_d = DECREASE;
 volatile bool saturation_d = DECREASE;
 volatile bool value_d = DECREASE;
 volatile int mode_global = SLEEP;
-
 
 void MemManage_Handler(void)
 {
@@ -172,363 +167,37 @@ void double_click_executor()
     }
 }
 
-void unknown_command_executor(char* args)
+
+void fill_command_definitions()
 {
-    char msg[100];
-    strcpy(msg, ERROR_MESSAGE);
-    usb_serial_dumb_print(msg, strlen(msg));
+    init_command_definitions();
+    command_definitions[0] = set_rgb_command;
+    command_definitions[1] = set_hsv_command;
+    command_definitions[2] = help_command;
+    command_definitions[3] = add_rgb_command;
+    command_definitions[4] = add_hsv_command;
+    command_definitions[5] = apply_color_command;
+    command_definitions[6] = list_colors_command;
+
+    // COMMAND_DEFINITION command_definitions[] = {
+    // set_rgb_command,
+    // set_hsv_command,
+    // help_command,
+    // add_rgb_command,
+    // add_hsv_command,
+    // apply_color_command,
+    // list_colors_command,
+
+
+    // // {
+    // //     .command_type = CMD_SAVE_COLORS,
+    // //     .name = "SAVE_COLORS",
+    // //     .description = "SAVE_COLORS - saves all stored colors to NVRAM.\r\n",
+    // //     .executor = nvram_save_colors_executor
+    // // },
+    // };
 }
 
-bool try_parse_int_arg(char * carg, int * pos, uint16_t * arg)
-{
-    uint16_t parsed_arg = 0;
-    int max_pos = strlen(carg);
-    while((*pos < max_pos) && (carg[*pos] == ' '))
-        *pos = *pos + 1;
-
-    int digits = 0;
-    while(*pos < max_pos && carg[*pos] != ' ')
-    {
-        if (carg[*pos] < '0' || carg[*pos] > '9')
-            return false; // not a digit
-        if (++digits > 3)
-            return false; // too big number
-        parsed_arg = parsed_arg * 10 + (uint16_t)(carg[*pos] - '0');
-        *pos = *pos + 1;
-    }
-
-    *arg = parsed_arg;
-    return digits > 0;
-}
-
-
-void set_rgb_executor(char* args)
-{
-    char msg[100];
-    COLOR_RGB color = 
-    {
-        .r = 0,
-        .g = 0,
-        .b = 0,
-    };
-    bool is_args_valid = true;
-    int cur_pos = 0;
-    if(!try_parse_int_arg(args, &cur_pos, &(color.r)) || color.r > 255){
-        is_args_valid = false;
-    }     
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(color.g)) || color.g > 255){
-        is_args_valid = false;
-    } 
-    
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(color.b)) || color.b > 255){
-        is_args_valid = false;
-    }
-
-    if (is_args_valid)
-    {
-        show_rgb_color(color);
-        snprintf(msg, sizeof(msg),
-                "Color set to: R=%u, G=%u, B=%u\r\n", color.r, color.g, color.b);
-        
-        usb_serial_dumb_print(msg, strlen(msg));
-    }
-    else 
-    {
-        unknown_command_executor(args);
-        NRF_LOG_INFO("Invalid set rgb arguments detected: %s", args);
-    }
-}
-
-void set_hsv_executor(char* args)
-{
-    char msg[100];
-    COLOR_HSV color = 
-    {
-        .h = 0,
-        .s = 0,
-        .v = 0,
-    };
-    
-    int cur_pos = 0;
-    bool is_args_valid = true;
-    if(!try_parse_int_arg(args, &cur_pos, &(color.h)) || color.h > 360){
-        is_args_valid = false;
-    }
-
-    uint16_t parsed_value = 0;
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &parsed_value) || parsed_value > 100){
-        is_args_valid = false;
-    } else {
-        color.s = (char)parsed_value;
-    }
-    
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &parsed_value) || parsed_value > 100){
-        is_args_valid = false;
-    } else {
-        color.v = (char)parsed_value;
-    }
-
-    if (is_args_valid)
-    {
-        COLOR_RGB rgb = hsv_to_rgb(color);
-
-        show_rgb_color(rgb);
-        snprintf(msg, sizeof(msg),
-                "Color set to: H=%u, S=%u, V=%u\r\n", color.h, color.s, color.v);
-        
-        usb_serial_dumb_print(msg, strlen(msg));
-    }
-    else 
-    {
-        unknown_command_executor(args);
-        NRF_LOG_INFO("Invalid set hsv arguments detected: %s", args);
-    }
-    
-}
-
-bool try_parse_str_arg(char* carg, int* pos, char* output, int max_len)
-{
-    int max_pos = strlen(carg);
-    while((*pos < max_pos) && (carg[*pos] == ' '))
-        *pos = *pos + 1;
-
-    int i = 0;
-    while(*pos < max_pos && carg[*pos] != ' ' && i < max_len - 1)
-    {
-        output[i] = carg[*pos];
-        i++;
-        *pos = *pos + 1;
-    }
-    output[i] = '\0';
-    return i > 0;
-}
-
-void add_rgb_executor(char* args)
-{
-    
-    char msg[100];
-    COLOR_DESCRIPTION colorDesc;
-    colorDesc.colorType = 0; // RGB
-    bool is_args_valid = true;
-    int cur_pos = 0;
-    
-    if (!try_parse_str_arg(args, &cur_pos, colorDesc.colorName, 11)){
-        is_args_valid = false;
-    }
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(colorDesc.first_component)) || colorDesc.first_component > 255){
-        is_args_valid = false;
-    }     
-    uint16_t value = colorDesc.second_component;
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(value)) || value > 255){
-        is_args_valid = false;
-    } 
-    colorDesc.second_component = (uint8_t)value;
-    value = colorDesc.third_component;
-    
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(value)) || colorDesc.third_component > 255){
-        is_args_valid = false;
-    }
-    colorDesc.third_component = (uint8_t)value;
-    if (is_args_valid)
-    {   
-        memmove(&listOfColorDescriptions[1],
-        &listOfColorDescriptions[0],
-        9 * sizeof(COLOR_DESCRIPTION));
-
-        // Now index 0 is free
-        listOfColorDescriptions[0] = colorDesc;
-
-        snprintf(msg, sizeof(msg),
-                "Color added: R=%u, G=%u, B=%u\r\n", colorDesc.first_component, colorDesc.second_component, colorDesc.third_component);
-        
-        usb_serial_dumb_print(msg, strlen(msg));
-    }
-}
-
-
-void add_hsv_executor(char* args)
-{
-    char msg[100];
-    COLOR_DESCRIPTION colorDesc;
-    colorDesc.colorType = 1; // HSV
-    bool is_args_valid = true;
-    int cur_pos = 0;
-    
-    if (!try_parse_str_arg(args, &cur_pos, colorDesc.colorName, 11)){
-        is_args_valid = false;
-    }
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(colorDesc.first_component)) || colorDesc.first_component > 360){
-        is_args_valid = false;
-    }     
-    uint16_t value = colorDesc.second_component;
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(value)) || value > 100){
-        is_args_valid = false;
-    } 
-    colorDesc.second_component = (uint8_t)value;
-    value = colorDesc.third_component;
-    
-    if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &(value)) || colorDesc.third_component >  100){
-        is_args_valid = false;
-    }
-    colorDesc.third_component = (uint8_t)value;
-    if (is_args_valid)
-    {   
-        memmove(&listOfColorDescriptions[1],
-        &listOfColorDescriptions[0],
-        9 * sizeof(COLOR_DESCRIPTION));
-
-        // Now index 0 is free
-        listOfColorDescriptions[0] = colorDesc;
-
-        snprintf(msg, sizeof(msg),
-                "Color added: H=%u, S=%u, V=%u\r\n", colorDesc.first_component, colorDesc.second_component, colorDesc.third_component);
-        
-        usb_serial_dumb_print(msg, strlen(msg));
-    }
-}
-
-void apply_color_executor(char* args)
-{
-    char msg[100];
-    char color_name[11];
-    bool is_args_valid = true;
-    int cur_pos = 0;
-    
-    if (!try_parse_str_arg(args, &cur_pos, color_name, 11)){
-        is_args_valid = false;
-    }
-
-    if (is_args_valid)
-    {
-        bool is_color_found = false;
-        for (int i = 0; i < 10; i++) 
-        {
-            if (strcmp(listOfColorDescriptions[i].colorName, color_name) == 0 && listOfColorDescriptions[i].colorType != 255) 
-            {
-                show_color(listOfColorDescriptions[i]);
-                is_color_found = true;
-                snprintf(msg, sizeof(msg),
-                        "Color applied: %s\r\n", color_name);
-                
-                usb_serial_dumb_print(msg, strlen(msg));
-                break;
-            }
-        }
-        if (!is_color_found) 
-        {
-            unknown_command_executor(args);
-            NRF_LOG_INFO("Color not found: %s", color_name);
-        }
-    }
-    else 
-    {
-        unknown_command_executor(args);
-        NRF_LOG_INFO("Invalid apply color arguments detected: %s", args);
-    }
-}
-
-void list_colors_executor(char* args)
-{
-    char msg[512];
-    msg[0] = '\0';
-    strncat(msg, "Stored colors:\r\n", sizeof(msg) - strlen(msg) - 1);
-    for (int i = 0; i < 10; i++) 
-    {
-        if (listOfColorDescriptions[i].colorType != 255) 
-        {
-            char color_info[64];
-            if (listOfColorDescriptions[i].colorType == 0) // RGB
-            {
-                snprintf(color_info, sizeof(color_info),
-                        "%s: R=%u, G=%u, B=%u\r\n", 
-                        listOfColorDescriptions[i].colorName,
-                        listOfColorDescriptions[i].first_component,
-                        listOfColorDescriptions[i].second_component,
-                        listOfColorDescriptions[i].third_component);
-            } 
-            else if (listOfColorDescriptions[i].colorType == 1) // HSV
-            {
-                snprintf(color_info, sizeof(color_info),
-                        "%s: H=%u, S=%u, V=%u\r\n", 
-                        listOfColorDescriptions[i].colorName,
-                        listOfColorDescriptions[i].first_component,
-                        listOfColorDescriptions[i].second_component,
-                        listOfColorDescriptions[i].third_component);
-            }
-            strncat(msg, color_info, sizeof(msg) - strlen(msg) - 1);
-        }
-    }
-    usb_serial_dumb_print(msg, strlen(msg));
-}
-
-void print_help_message(char* args);
-
-COMMAND_DEFINITION command_definitions[] = {
-    {
-        .command_type = CMD_SET_RGB,
-        .name = "RGB",
-        .description = "RGB <red> <green> <blue> - the device sets current color to specified one.\r\n",
-        .executor = set_rgb_executor
-    },
-    
-    {
-        .command_type = CMD_SET_HSV,
-        .name = "HSV",
-        .description = "HSV <hue> <saturation> <value> - the same with RGB, but color is specified in HSV.\r\n",
-        .executor =  set_hsv_executor
-    },
-
-    {
-        .command_type = CMD_HELP,
-        .name = "HELP",
-        .description = "HELP - prints this message.\r\n",
-        .executor = print_help_message
-    },
-
-    {
-        .command_type = CMD_ADD_RGB,
-        .name = "ADD_RGB",
-        .description = "ADD_RGB <color_name> <red> <green> <blue> - the device adds specified RGB color to the list of stored.\r\n",
-        .executor = add_rgb_executor
-    },
-
-    {
-        .command_type = CMD_ADD_HSV,
-        .name = "ADD_HSV",
-        .description = "ADD_HSV <color_name> <hue> <saturation> <value> - the device adds specified HSV color to the list of stored.\r\n",
-        .executor = add_hsv_executor
-    },
-
-    {
-        .command_type = CMD_APPLY_COLOR,
-        .name = "APPLY_COLOR",
-        .description = "APPLY_COLOR <color_name>  - the device sets specified color from the list of stored.\r\n",
-        .executor = apply_color_executor
-    },
-
-    {
-        .command_type = CMD_LIST_COLORS,
-        .name = "LIST_COLORS",
-        .description = "LIST_COLORS - prints all stored colors.\r\n",
-        .executor = list_colors_executor
-    },
-};
-
-void print_help_message(char* args)
-{
-    char msg[1024];
-    msg[0] = '\0';
-
-    strncat(msg, "Supported commands:\r\n", sizeof(msg) - strlen(msg) - 1);
-    for (size_t i = 0; i < sizeof(command_definitions) / sizeof(COMMAND_DEFINITION); i++)
-    {
-        if(command_definitions[i].command_type != CMD_UNKNOWN) 
-        {
-            strncat(msg, command_definitions[i].description, sizeof(msg) - strlen(msg) - 1);
-        }
-    }
-    usb_serial_dumb_print(msg, strlen(msg));
-}
 
 
 void main_loop(void)
@@ -549,9 +218,12 @@ void main_loop(void)
 
 int main(void)
 {
+
     SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk
             | SCB_SHCSR_BUSFAULTENA_Msk
             | SCB_SHCSR_USGFAULTENA_Msk;
+    init_color_palette();
+    fill_command_definitions();
     logs_init();
     if (is_version_changed(CURRENT_VERSION))
     {
@@ -566,9 +238,10 @@ int main(void)
     init_button(double_click_executor, change_hsv);
     init_usb_cli(command_definitions, sizeof(command_definitions) / sizeof(COMMAND_DEFINITION),
                 unknown_command_executor);
-    main_loop();
-}
 
+                main_loop();
+
+}
 /**
  *@}
  **/
