@@ -1,4 +1,5 @@
 #include "command_utils.h"
+#include "color_utils.h"
 
 void set_rgb_executor(char* args)
 {
@@ -24,7 +25,11 @@ void set_rgb_executor(char* args)
 
     if (is_args_valid)
     {
-        show_rgb_color(color);
+        COLOR_HSV hsv_color = rgb_to_hsv(color);
+        current_color_description.first_component = hsv_color.h;
+        current_color_description.second_component = hsv_color.s;
+        current_color_description.third_component = hsv_color.v;
+        show_color(current_color_description);
         snprintf(msg, sizeof(msg),
                 "Color set to: R=%u, G=%u, B=%u\r\n", color.r, color.g, color.b);
         

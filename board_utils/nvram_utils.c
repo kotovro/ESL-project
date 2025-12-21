@@ -5,19 +5,6 @@
 
 bool is_erase_needed = true;
 
-uint32_t color_hsv_to_uint(COLOR_HSV s)
-{
-    uint32_t value;
-    memcpy(&value, &s, sizeof(value));
-    return value;
-}
-
-COLOR_HSV uint_to_color_hsv(uint32_t value)
-{
-    COLOR_HSV s;
-    memcpy(&s, &value, sizeof(s));
-    return s;
-}
 
 void update_version(uint32_t version)
 {
@@ -39,32 +26,34 @@ bool is_version_changed(uint32_t version)
     return is_version_changed;
 }
 
-void nvram_save_settings(COLOR_DESCRIPTION current_color)
+void nvram_save_settings(uint32_t* settings, size_t settings_size)
 {
-    COLOR_HSV stored_color = uint_to_color_hsv(*(uint32_t*)HSV_SETTING_ADDR);
-    if (stored_color.h == current_color.first_component &&
-        stored_color.s == current_color.second_component &&
-        stored_color.v == current_color.third_component)
-        return;
-    COLOR_HSV current_color_hsv = 
-    {
-        .h = current_color.first_component,
-        .s = (char)current_color.second_component,
-        .v = (char)current_color.third_component,
-    };
-    if (is_erase_needed || !nrfx_nvmc_word_writable_check((uint32_t)HSV_SETTING_ADDR, color_hsv_to_uint(current_color_hsv))) 
-    {
+    // Check if we need to erase the page
+    bool page_needs_erase = is_erase_needed;
+
+    if (!page_needs_erase) {
+        // Check if all words can be written without erasing
+        for (size_t i = 0; i < settings_size / 4; i++) {
+            if (!nrfx_nvmc_word_writable_check((uint32_t)APPDATA_START_ADDR + i * 4, settings[i])) {
+                page_needs_erase = true;
+                break;
+            }
+        }
+    }
+
+    // Erase page if needed
+    if (page_needs_erase) {
         nrfx_nvmc_page_erase(APPDATA_START_ADDR);
         nrfx_nvmc_word_write(VERSION_SETTING_ADDRESS, CURRENT_VERSION);
         while (!nrfx_nvmc_write_done_check()) {
         }
-        is_erase_needed = false;
-    } else {
-        is_erase_needed = true;
     }
 
-    nrfx_nvmc_word_write(HSV_SETTING_ADDR, color_hsv_to_uint(current_color_hsv));
-    while (!nrfx_nvmc_write_done_check()) {
+    // Write all settings
+    for (size_t i = 1; i < settings_size / 4; i++) {
+        nrfx_nvmc_word_write((uint32_t)APPDATA_START_ADDR + i * 4, settings[i]);
+        while (!nrfx_nvmc_write_done_check()) {
+        }
     }
     NRF_LOG_INFO("Settings successfully saved");
     LOG_BACKEND_USB_PROCESS();

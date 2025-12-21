@@ -3,6 +3,8 @@
 
 COMMAND_DEFINITION command_definitions[AVAILABLE_COMMANDS_SLOTS];
 COLOR_DESCRIPTION colorPalette[AVAILABLE_COLOR_SLOTS];
+SETTINGS settings;
+COLOR_DESCRIPTION current_color_description = {1, "LOL\0", 22, 100, 100};
 
 void init_color_palette()
 {
@@ -49,8 +51,6 @@ bool try_parse_int_arg(char * carg, int * pos, uint16_t * arg)
     return digits > 0;
 }
 
-
-
 bool try_parse_str_arg(char* carg, int* pos, char* output, int max_len)
 {
     int max_pos = strlen(carg);
@@ -65,7 +65,7 @@ bool try_parse_str_arg(char* carg, int* pos, char* output, int max_len)
         *pos = *pos + 1;
     }
     output[i] = '\0';
-    return i > 0;
+    return (i > 0) && (carg[*pos] == ' ' || carg[*pos] == '\0');
 }
 
 

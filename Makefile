@@ -68,6 +68,7 @@ SRC_FILES += \
   $(PROJ_DIR)/board_utils/button_utils.c \
   $(PROJ_DIR)/board_utils/nvram_utils.c \
   $(PROJ_DIR)/board_utils/cli_utils.c \
+  $(PROJ_DIR)/board_utils/color_utils.c \
   $(PROJ_DIR)/main.c \
 
  

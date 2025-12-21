@@ -21,6 +21,5 @@ void show_rgb_color(COLOR_RGB color);
 void show_color(COLOR_DESCRIPTION color);
 void init_leds_init(void);
 void init_pwm_leds(void);
-COLOR_RGB hsv_to_rgb(COLOR_HSV hsv);
 
 #endif

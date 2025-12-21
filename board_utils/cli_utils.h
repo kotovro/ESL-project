@@ -12,11 +12,8 @@
 #define CMD_APPLY_COLOR 5
 #define CMD_LIST_COLORS 6
 #define CMD_SAVE_COLORS 7
+#define CMD_SAVE_CURRENT_COLOR 8
 #define CMD_UNKNOWN 255 
-#define HELP_MESSAGE "Supported commands:\r\n" \
-            "RGB <red> <green> <blue> - the device sets current color to specified one.\r\n" \
-            "HSV <hue> <saturation> <value> - the same with RGB, but color is specified in HSV.\r\n" \
-            "help - print this information.\r\n"
 #define ERROR_MESSAGE "Unknown command\r\n"
     
 typedef void  (*Command_Executor)(char*);

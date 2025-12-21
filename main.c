@@ -57,9 +57,9 @@
 #include "add_hsv_command.h"
 #include "apply_color_command.h"
 #include "list_colors_command.h"
+#include "save_color_palette_command.h"
+#include "save_current_color_command.h"
 
-SETTINGS settings;
-COLOR_DESCRIPTION current_color_description = {1, "LOL\0", 22, 100, 100};
 volatile bool hue_d = DECREASE;
 volatile bool saturation_d = DECREASE;
 volatile bool value_d = DECREASE;
@@ -104,7 +104,7 @@ void change_hsv()
             }
         } else {
             current_color_description.first_component-= STEP_OF_COLOR_CHANGE;
-            if (current_color_description.first_component<= 0) {
+            if ((int16_t)current_color_description.first_component<= 0) {
                 current_color_description.first_component= 0;
                 hue_d = INCREASE;
             }
@@ -119,7 +119,7 @@ void change_hsv()
             }
         } else {
             current_color_description.second_component -= STEP_OF_COLOR_CHANGE;
-            if (current_color_description.second_component <= 0) {
+            if ((int8_t)current_color_description.second_component <= 0) {
                 current_color_description.second_component = 0;
                 saturation_d = INCREASE;
             }
@@ -134,7 +134,7 @@ void change_hsv()
             }
         } else {
             current_color_description.third_component -= STEP_OF_COLOR_CHANGE;
-            if (current_color_description.third_component <= 0) {
+            if ((int8_t)current_color_description.third_component <= 0) {
                 current_color_description.third_component = 0;
                 value_d = INCREASE;
             }
@@ -165,7 +165,7 @@ void double_click_executor()
     {
         mode_global = SLEEP;
         pattern_off();
-        nvram_save_settings(current_color_description);
+        save_current_color();
     }
 }
 
@@ -180,15 +180,8 @@ void fill_command_definitions()
     command_definitions[4] = add_hsv_command;
     command_definitions[5] = apply_color_command;
     command_definitions[6] = list_colors_command;
-
-
-    // // {
-    // //     .command_type = CMD_SAVE_COLORS,
-    // //     .name = "SAVE_COLORS",
-    // //     .description = "SAVE_COLORS - saves all stored colors to NVRAM.\r\n",
-    // //     .executor = nvram_save_colors_executor
-    // // },
-    // };
+    command_definitions[7] = save_current_color_command;
+    command_definitions[8] = save_color_palette_command;
 }
 
 void main_loop(void)
@@ -245,7 +238,6 @@ int main(void)
         nvram_load_settings((uint32_t*)&settings, sizeof(settings));
         read_current_color_from_nvm();
         read_palette_from_nvm();
-        
     } 
     init_leds_init();
     init_pwm_leds();

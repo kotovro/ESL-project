@@ -20,20 +20,21 @@ void set_hsv_executor(char* args)
     if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &parsed_value) || parsed_value > 100){
         is_args_valid = false;
     } else {
-        color.s = (char)parsed_value;
+        color.s = (uint8_t)parsed_value;
     }
     
     if(!is_args_valid || !try_parse_int_arg(args, &cur_pos, &parsed_value) || parsed_value > 100){
         is_args_valid = false;
     } else {
-        color.v = (char)parsed_value;
+        color.v = (uint8_t)parsed_value;
     }
 
     if (is_args_valid)
     {
-        COLOR_RGB rgb = hsv_to_rgb(color);
-
-        show_rgb_color(rgb);
+        current_color_description.first_component = color.h;
+        current_color_description.second_component = color.s;
+        current_color_description.third_component = color.v;
+        show_color(current_color_description);
         snprintf(msg, sizeof(msg),
                 "Color set to: H=%u, S=%u, V=%u\r\n", color.h, color.s, color.v);
         

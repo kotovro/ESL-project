@@ -43,19 +43,9 @@ static void debounce_timer_handler(void * p_context)
 static void button_press_handler(void * p_context)
 {
     if (nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED) {
-        // change_hsv(mode_global);
         m_press_action();
-        app_timer_start(button_press_timer_id, COLOR_CHANGE_MS, NULL); /// rename to check press ms
+        app_timer_start(button_press_timer_id, COLOR_CHANGE_MS, NULL);
     }
-    /// refaor so that inside we check if still pressed and mode is not sleep, then call press_executor again
-    // if (mode_global == SLEEP) {
-    //     return;
-    // }
-    // else if (nrf_gpio_pin_read(BUTTON_PIN) == BUTTON_PRESSED) {
-    //     // change_hsv(mode_global);
-    //     ///execute press_executor();
-    //     app_timer_start(button_press_timer_id, COLOR_CHANGE_MS, NULL);
-    // }
 }   
 
 void timers_init(void)
@@ -95,7 +85,7 @@ static void button_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
     }
 }
 
-void init_button(Double_Click_Executor double_click_executor, Button_Press_Executor press_executor) /// pass there 2 different handlers: one for double click, one for press
+void init_button(Double_Click_Executor double_click_executor, Button_Press_Executor press_executor)
 {
     m_double_click_action = double_click_executor;
     m_press_action = press_executor;

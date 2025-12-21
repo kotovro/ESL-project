@@ -1,6 +1,7 @@
 #include "board_utils.h"
 #include "nrfx_pwm.h"
 #include "led_utils.h"
+#include "color_utils.h"
 
 extern COLOR_DESCRIPTION current_color_description;
 
@@ -8,6 +9,12 @@ nrf_pwm_values_individual_t led_seq[FADE_STEPS];
 
 void show_color(COLOR_DESCRIPTION color) 
 {
+    NRF_LOG_INFO("Showing color: type=%u, comp1=%u, comp2=%u, comp3=%u",
+                 color.colorType,
+                 color.first_component,
+                 color.second_component,
+                 color.third_component);
+    LOG_BACKEND_USB_PROCESS();
     COLOR_RGB rgb_color;
     if (color.colorType == 0) // RGB
     {
@@ -41,34 +48,7 @@ void show_rgb_color(COLOR_RGB color)
     }
 }
 
-COLOR_RGB hsv_to_rgb(COLOR_HSV hsv) 
-{
-    float r, g, b;
-    float hf = hsv.h / 60.0f;
-    float sf = hsv.s / 100.0f;
-    float vf = hsv.v / 100.0f;
-    int i = (int)hf % 6;
-    float f = hf - i;
-    float p = vf * (1 - sf);
-    float q = vf * (1 - f * sf);
-    float t = vf * (1 - (1 - f) * sf);
-
-    switch (i) {
-        case 0: r = vf; g = t; b = p; break;
-        case 1: r = q; g = vf; b = p; break;
-        case 2: r = p; g = vf; b = t; break;
-        case 3: r = p; g = q; b = vf; break;
-        case 4: r = t; g = p; b = vf; break;
-        case 5: r = vf; g = p; b = q; break;
-        default: r = g = b = 0; break;
-    }
-    COLOR_RGB result_COLOR_RGB;
-    result_COLOR_RGB.r = (uint16_t)(r * 255);
-    result_COLOR_RGB.g = (uint16_t)(g * 255);
-    result_COLOR_RGB.b = (uint16_t)(b * 255);
-    return result_COLOR_RGB;
-}
-
+// -------------------- PWM LED control --------------------
 static const uint32_t m_led_pins[LED_COUNT] = {
     NRF_GPIO_PIN_MAP(0,6),
     NRF_GPIO_PIN_MAP(0,8),

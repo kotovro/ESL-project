@@ -1,4 +1,5 @@
 #include "command_utils.h"
+#include "color_utils.h"
 
 void apply_color_executor(char* args)
 {
@@ -18,7 +19,27 @@ void apply_color_executor(char* args)
         {
             if (strcmp(colorPalette[i].colorName, color_name) == 0 && colorPalette[i].colorType != 255) 
             {
-                show_color(colorPalette[i]);
+                if (colorPalette[i].colorType == 1) 
+                {
+                    current_color_description = colorPalette[i];
+                }
+                else if (colorPalette[i].colorType == 0) 
+                {
+                    COLOR_HSV hsv_color = rgb_to_hsv((COLOR_RGB){
+                        .r = (uint16_t)colorPalette[i].first_component,
+                        .g = (uint16_t)colorPalette[i].second_component,
+                        .b = (uint16_t)colorPalette[i].third_component,
+                    });
+                    current_color_description.colorType = 1; // HSV
+                    current_color_description.first_component = hsv_color.h;
+                    current_color_description.second_component = hsv_color.s;
+                    current_color_description.third_component = hsv_color.v;
+                }
+                else 
+                {   
+                    continue; // Unknown color type
+                }
+                show_color(current_color_description);
                 is_color_found = true;
                 snprintf(msg, sizeof(msg),
                         "Color applied: %s\r\n", color_name);

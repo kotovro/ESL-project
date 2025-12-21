@@ -5,7 +5,6 @@
 
 void update_version(uint32_t version);
 bool is_version_changed(uint32_t version);
-void nvram_save_settings(COLOR_DESCRIPTION current_color);
-// void nvram_load_settings(COLOR_DESCRIPTION* current_color);
+void nvram_save_settings(uint32_t* settings, size_t settings_size);
 void nvram_load_settings(uint32_t* settings, size_t settings_size);
 #endif

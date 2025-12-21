@@ -14,8 +14,8 @@
 #include "app_timer.h"
 #include "nrfx_clock.h"
 
-#define CURRENT_VERSION ((uint32_t)3)
-#define AVAILABLE_COMMANDS_SLOTS 7
+#define CURRENT_VERSION ((uint32_t)5)
+#define AVAILABLE_COMMANDS_SLOTS 9
 #define AVAILABLE_COLOR_SLOTS 10
 
 // --- Button settings ---
@@ -47,7 +47,6 @@
 #define DECREASE false
 
 
-
 typedef struct {
     // 0 - RGB
     // 1 - HSV
@@ -61,8 +60,8 @@ typedef struct {
 
 typedef struct {
     uint16_t h;
-    char s;
-    char v;
+    uint8_t s;
+    uint8_t v;
 } COLOR_HSV;
 
 typedef struct {
@@ -73,8 +72,8 @@ typedef struct {
 
 
 typedef struct {
-    COLOR_HSV saved_color;
     uint32_t version;
+    COLOR_HSV saved_color;
     COLOR_DESCRIPTION colorPalette[AVAILABLE_COLOR_SLOTS]; 
 } SETTINGS;
 
@@ -88,8 +87,7 @@ typedef struct {
 #define NRF_DFU_APP_DATA_PAGES 3
 
 #define APPDATA_START_ADDR  (BOOTLOADER_START_ADDR - (NRF_DFU_APP_DATA_PAGES * PAGE_SIZE))
-#define HSV_SETTING_ADDR   (APPDATA_START_ADDR)
-#define VERSION_SETTING_ADDRESS ((uint32_t)((uint32_t*)APPDATA_START_ADDR + 1))
+#define VERSION_SETTING_ADDRESS (APPDATA_START_ADDR)
 
 // USB CDC ACM settings
 #define CDC_ACM_COMM_INTERFACE  2
