@@ -222,7 +222,6 @@ void read_palette_from_nvm()
 
 int main(void)
 {
-
     SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk
             | SCB_SHCSR_BUSFAULTENA_Msk
             | SCB_SHCSR_USGFAULTENA_Msk;
@@ -245,7 +244,6 @@ int main(void)
     init_usb_cli(command_definitions, sizeof(command_definitions) / sizeof(COMMAND_DEFINITION),
                 unknown_command_executor);
     main_loop();
-
 }
 /**
  *@}
